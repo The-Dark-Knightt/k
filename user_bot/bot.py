@@ -1,5 +1,5 @@
 """
-USER BOT  –  student-facing side
+USER BOT – student-facing side
 """
 
 import logging
@@ -10,108 +10,100 @@ import time
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(**file**), ".."))
 from shared.storage import get_user, set_user, get_admin_status
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(**name**)
 
-USER_BOT_TOKEN  = os.environ["USER_BOT_TOKEN"]
+USER_BOT_TOKEN = os.environ["USER_BOT_TOKEN"]
 ADMIN_BOT_TOKEN = os.environ["ADMIN_BOT_TOKEN"]
-ADMIN_CHAT_ID   = int(os.environ["ADMIN_CHAT_ID"])
+ADMIN_CHAT_ID = int(os.environ["ADMIN_CHAT_ID"])
 
-bot       = telebot.TeleBot(USER_BOT_TOKEN)
+bot = telebot.TeleBot(USER_BOT_TOKEN)
 admin_bot = telebot.TeleBot(ADMIN_BOT_TOKEN)
 
 PAYMENT_INSTRUCTIONS = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 *HOW IT WORKS*
+📋 _HOW IT WORKS_
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 1️⃣ Make your payment
 2️⃣ Send your payment reference here
 3️⃣ Wait for confirmation ✅
 4️⃣ Upload your document(s) 📄
 5️⃣ Receive your report 📊
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 *PRICING*
+💰 _PRICING_
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📌 *$1 per document check*
-Accepted as: *1 USDT* 0R *130 Kshs*
+📌 _$1 per document check_
+Accepted as: _1 USDT_ 0R _130 Kshs_
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💳 *PAYMENT OPTIONS*
+💳 _PAYMENT OPTIONS_
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📱 *M-Pesa:* `0799023325`
-🔶 *Binance Pay ID:* `2938399390`
+📱 _M-Pesa:_ `0799023325`
+🔶 _Binance Pay ID:_ `2938399390`
 USDT (Tron(trc20): TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-➡️ *Once paid, send your payment reference number OR a screenshot of your payment here to proceed!*
+➡️ _Once paid, send your payment reference number OR a screenshot of your payment here to proceed!_
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Support _@daemonizerr_
 """.strip()
 
-
 def get_status_line():
-    if get_admin_status() == "online":
-        return "\n🟢 Online"
-    return ""
+if get_admin_status() == "online":
+return "\n🟢 Online"
+return ""
 
-
-FOLLOWUP_DELAY  = 3 * 60   # 3 minutes before follow-up message
-COLLECT_SECONDS = 30        # seconds to wait for more files after first upload
+FOLLOWUP_DELAY = 3 \* 60 # 3 minutes before follow-up message
+COLLECT_SECONDS = 30 # seconds to wait for more files after first upload
 
 # Multi-file upload tracking per user
-user_files   = {}   # {user_id: [(file_id, file_name), ...]}
-user_timers  = {}   # {user_id: Timer}
 
+user_files = {} # {user_id: [(file_id, file_name), ...]}
+user_timers = {} # {user_id: Timer}
 
 # ── Follow-up after report ─────────────────────────────────────────────────────
 
 def send_followup(chat_id):
-    time.sleep(FOLLOWUP_DELAY)
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("📄 Start New Check", callback_data="new_check"))
-    bot.send_message(
-        chat_id,
-        "🔄 *Need another check?*\n\n"
-        "Tap the button below to submit a new document!",
-        parse_mode="Markdown",
-        reply_markup=markup,
-    )
-
+time.sleep(FOLLOWUP_DELAY)
+markup = InlineKeyboardMarkup()
+markup.add(InlineKeyboardButton("📄 Start New Check", callback_data="new_check"))
+bot.send_message(
+chat_id,
+"🔄 _Need another check?_\n\n"
+"Tap the button below to submit a new document!",
+parse_mode="Markdown",
+reply_markup=markup,
+)
 
 def notify_report_sent(chat_id):
-    """Called by admin bot after sending report — triggers the follow-up message."""
-    t = threading.Thread(target=send_followup, args=(chat_id,), daemon=True)
-    t.start()
-
+"""Called by admin bot after sending report — triggers the follow-up message."""
+t = threading.Thread(target=send_followup, args=(chat_id,), daemon=True)
+t.start()
 
 @bot.callback_query_handler(func=lambda call: call.data == "new_check")
 def handle_new_check(call):
-    user = call.from_user
-    full_name = user.first_name + (" " + user.last_name if user.last_name else "")
-    set_user(user.id, {
-        "username":  user.username or "",
-        "full_name": full_name,
-        "status":    "pending_payment",
-    })
-    bot.answer_callback_query(call.id)
-    bot.send_message(
-        call.message.chat.id,
-        f"👋 Welcome back, {user.first_name}!\n\n"
-        "Let's get your next document checked.\n\n"
-        + PAYMENT_INSTRUCTIONS + get_status_line(),
-        parse_mode="Markdown",
-    )
-
+user = call.from_user
+full_name = user.first_name + (" " + user.last_name if user.last_name else "")
+set_user(user.id, {
+"username": user.username or "",
+"full_name": full_name,
+"status": "pending_payment",
+})
+bot.answer_callback_query(call.id)
+bot.send_message(
+call.message.chat.id,
+f"👋 Welcome back, {user.first_name}!\n\n"
+"Let's get your next document checked.\n\n" + PAYMENT_INSTRUCTIONS + get_status_line(),
+parse_mode="Markdown",
+)
 
 # ── Multi-file upload finalizer ────────────────────────────────────────────────
 
-def _finalize_upload(user_id, chat_id, full_name):
-    """Called after COLLECT_SECONDS — forwards all collected files to admin."""
-    files = user_files.pop(user_id, [])
-    user_timers.pop(user_id, None)
+def \_finalize_upload(user_id, chat_id, full_name):
+"""Called after COLLECT_SECONDS — forwards all collected files to admin."""
+files = user_files.pop(user_id, [])
+user_timers.pop(user_id, None)
 
     if not files:
         return
@@ -148,33 +140,30 @@ def _finalize_upload(user_id, chat_id, full_name):
         parse_mode="Markdown",
     )
 
-
 # ── Handlers ───────────────────────────────────────────────────────────────────
 
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
-    user = message.from_user
-    full_name = user.first_name + (" " + user.last_name if user.last_name else "")
-    set_user(user.id, {
-        "username":  user.username or "",
-        "full_name": full_name,
-        "status":    "pending_payment",
-    })
-    bot.send_message(
-        message.chat.id,
-        f"👋 Welcome, {user.first_name}!\n\n"
-        "This bot lets you submit documents for *AI & plagiarism checking*.\n\n"
-        "To get started, please complete a payment first.\n\n"
-        + PAYMENT_INSTRUCTIONS + get_status_line(),
-        parse_mode="Markdown",
-    )
-
+user = message.from_user
+full_name = user.first_name + (" " + user.last_name if user.last_name else "")
+set_user(user.id, {
+"username": user.username or "",
+"full_name": full_name,
+"status": "pending_payment",
+})
+bot.send_message(
+message.chat.id,
+f"👋 Welcome, {user.first_name}!\n\n"
+"This bot lets you submit documents for _AI & plagiarism checking_.\n\n"
+"To get started, please complete a payment first.\n\n" + PAYMENT_INSTRUCTIONS + get_status_line(),
+parse_mode="Markdown",
+)
 
 @bot.message_handler(content_types=["document"])
 def handle_document(message):
-    user    = message.from_user
-    profile = get_user(user.id)
-    status  = profile.get("status", "pending_payment")
+user = message.from_user
+profile = get_user(user.id)
+status = profile.get("status", "pending_payment")
 
     if status != "approved":
         msgs = {
@@ -189,34 +178,40 @@ def handle_document(message):
     full_name = profile.get("full_name", user.first_name)
     doc = message.document
 
-    # Collect file
-    if user.id not in user_files:
-        user_files[user.id] = []
-    user_files[user.id].append((doc.file_id, doc.file_name))
+    # Only allow one file
 
-    # Cancel existing timer and restart
-    if user.id in user_timers:
-        user_timers[user.id].cancel()
+doc = message.document
+set_user(user.id, {"status": "doc_received", "file_id": doc.file_id, "file_name": doc.file_name})
 
-    count = len(user_files[user.id])
-    bot.send_message(
-        message.chat.id,
-        f"📎 *File {count} received!*\n\nSend more files or wait {COLLECT_SECONDS} seconds and we'll process everything. ✅",
-        parse_mode="Markdown",
-    )
-
-    timer = threading.Timer(COLLECT_SECONDS, _finalize_upload, args=[user.id, message.chat.id, full_name])
-    timer.daemon = True
-    timer.start()
-    user_timers[user.id] = timer
-
-
+file_info = bot.get_file(doc.file_id)
+downloaded = bot.download_file(file_info.file_path)
+admin_bot.send_message(
+ADMIN_CHAT_ID,
+f"📄 _Document Received_\n\n"
+f"👤 {full_name} | ID: `{user.id}`\n"
+f"📎 File: {doc.file_name}\n\n"
+f"When done, use:\n`/sendreport {user.id}` and attach the report.",
+parse_mode="Markdown",
+)
+admin_bot.send_document(
+ADMIN_CHAT_ID,
+downloaded,
+visible_file_name=doc.file_name,
+caption=f"📎 From {full_name} (ID: {user.id})",
+)
+bot.send_message(
+message.chat.id,
+"📨 _Document received!_\n\n"
+"⏱ Your report will be ready in approximately _5–15 minutes_. "
+"We'll send it here as soon as it's done! ✅",
+parse_mode="Markdown",
+)
 
 @bot.message_handler(content_types=["photo"])
 def handle_photo(message):
-    user    = message.from_user
-    profile = get_user(user.id)
-    status  = profile.get("status", "pending_payment")
+user = message.from_user
+profile = get_user(user.id)
+status = profile.get("status", "pending_payment")
 
     if status in ("pending_payment", "pending_approval"):
         # Forward screenshot to admin
@@ -250,10 +245,10 @@ def handle_photo(message):
 
 @bot.message_handler(func=lambda m: True, content_types=["text"])
 def handle_text(message):
-    user    = message.from_user
-    text    = message.text.strip()
-    profile = get_user(user.id)
-    status  = profile.get("status", "pending_payment")
+user = message.from_user
+text = message.text.strip()
+profile = get_user(user.id)
+status = profile.get("status", "pending_payment")
 
     if status in ("pending_payment", "pending_approval"):
         ref = text.upper()
@@ -293,11 +288,9 @@ def handle_text(message):
     else:
         bot.send_message(message.chat.id, "Please complete payment and send your reference code to proceed.")
 
-
 def main():
-    logger.info("User bot running...")
-    bot.infinity_polling()
+logger.info("User bot running...")
+bot.infinity_polling()
 
-
-if __name__ == "__main__":
-    main()
+if **name** == "**main**":
+main()
