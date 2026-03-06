@@ -143,7 +143,7 @@ def handle_document(message):
 
     bot.send_message(
         message.chat.id,
-        "📨 Your document has been received! We'll send your report within 24-48 hours. ✅"
+        "📨 Your document has been received! We'll send your report within 5 - 15 min. ✅"
     )
 
 
