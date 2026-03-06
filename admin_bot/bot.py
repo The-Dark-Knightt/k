@@ -16,7 +16,7 @@ import sys
 import telebot
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from shared.storage import get_user, set_user, all_users
+from shared.storage import get_user, set_user, all_users, set_admin_status, get_admin_status
 
 # Delay import to avoid circular imports
 def _notify_report_sent(chat_id):
@@ -202,6 +202,21 @@ def cmd_sendreport(message):
         parse_mode="Markdown",
     )
 
+
+
+
+@bot.message_handler(commands=["online"])
+@admin_only
+def cmd_online(message):
+    set_admin_status("online")
+    bot.send_message(message.chat.id, "🟢 Status set to *Online*. Users will see you as online.", parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["offline"])
+@admin_only
+def cmd_offline(message):
+    set_admin_status("offline")
+    bot.send_message(message.chat.id, "⚫ Status set to *Offline*. Users will no longer see the online indicator.", parse_mode="Markdown")
 
 @bot.message_handler(commands=["help"])
 @admin_only
