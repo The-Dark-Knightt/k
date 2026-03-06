@@ -40,6 +40,12 @@ user_bot = telebot.TeleBot(USER_BOT_TOKEN)
 
 # Track pending report deliveries: {admin_chat_id: user_id}
 pending_reports = {}
+# Track files already sent per session: {admin_chat_id: [file_ids]}
+pending_files = {}
+# Track timers that finalize delivery: {admin_chat_id: Timer}
+pending_timers = {}
+
+COLLECT_SECONDS = 30  # seconds to wait for more files after first one
 
 STATUS_EMOJI = {
     "pending_payment":  "💳",
@@ -213,33 +219,72 @@ def cmd_help(message):
     )
 
 
+def _finalize_report(admin_chat_id):
+    """Called after COLLECT_SECONDS — delivers all collected files to user."""
+    import threading
+    user_id = pending_reports.pop(admin_chat_id, None)
+    files   = pending_files.pop(admin_chat_id, [])
+    pending_timers.pop(admin_chat_id, None)
+
+    if not user_id or not files:
+        return
+
+    profile = get_user(user_id)
+    total   = len(files)
+
+    for i, (file_id, file_name) in enumerate(files):
+        file_info  = bot.get_file(file_id)
+        downloaded = bot.download_file(file_info.file_path)
+        caption = (
+            f"📋 *Your AI & Plagiarism Check Report is ready!*\n\nPlease review the attached document carefully. ✅"
+            if i == 0 else f"📎 File {i+1} of {total}"
+        )
+        user_bot.send_document(
+            user_id,
+            downloaded,
+            visible_file_name=file_name,
+            caption=caption,
+            parse_mode="Markdown",
+        )
+
+    set_user(user_id, {"status": "report_sent"})
+    _notify_report_sent(user_id)
+    bot.send_message(
+        admin_chat_id,
+        f"✅ {total} file(s) delivered to user `{user_id}` ({profile.get('full_name', '')}).",
+        parse_mode="Markdown",
+    )
+
+
 @bot.message_handler(content_types=["document"])
 @admin_only
 def handle_admin_document(message):
+    import threading
     if message.chat.id not in pending_reports:
         bot.send_message(message.chat.id, "ℹ️ Use `/sendreport <user_id>` before sending a file.", parse_mode="Markdown")
         return
 
-    user_id = pending_reports.pop(message.chat.id)
-    profile = get_user(user_id)
+    admin_chat_id = message.chat.id
 
-    # Download from admin bot and re-upload via user bot
-    file_info = bot.get_file(message.document.file_id)
-    downloaded = bot.download_file(file_info.file_path)
-    user_bot.send_document(
-        user_id,
-        downloaded,
-        visible_file_name=message.document.file_name,
-        caption="📋 *Your AI & Plagiarism Check Report is ready!*\n\nPlease review the attached document carefully. ✅",
-        parse_mode="Markdown",
-    )
-    set_user(user_id, {"status": "report_sent"})
-    _notify_report_sent(user_id)
+    # Collect the file
+    if admin_chat_id not in pending_files:
+        pending_files[admin_chat_id] = []
+    pending_files[admin_chat_id].append((message.document.file_id, message.document.file_name))
+
+    # Cancel existing timer and restart it
+    if admin_chat_id in pending_timers:
+        pending_timers[admin_chat_id].cancel()
+
+    count = len(pending_files[admin_chat_id])
     bot.send_message(
-        message.chat.id,
-        f"✅ Report delivered to user `{user_id}` ({profile.get('full_name', '')}).",
-        parse_mode="Markdown",
+        admin_chat_id,
+        f"📎 File {count} received. Send more files or wait {COLLECT_SECONDS}s to deliver all to user.",
     )
+
+    timer = threading.Timer(COLLECT_SECONDS, _finalize_report, args=[admin_chat_id])
+    timer.daemon = True
+    timer.start()
+    pending_timers[admin_chat_id] = timer
 
 
 def main():
@@ -249,3 +294,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Patch: add /done command to finalize early
+@bot.message_handler(commands=["done"])
+@admin_only
+def cmd_done(message):
+    if message.chat.id not in pending_reports:
+        bot.send_message(message.chat.id, "ℹ️ No active report session. Use `/sendreport <user_id>` first.", parse_mode="Markdown")
+        return
+    if message.chat.id in pending_timers:
+        pending_timers[message.chat.id].cancel()
+    _finalize_report(message.chat.id)
