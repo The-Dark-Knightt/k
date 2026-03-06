@@ -5,7 +5,10 @@ USER BOT  –  student-facing side
 import logging
 import os
 import sys
+import threading
+import time
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.storage import get_user, set_user
@@ -34,7 +37,6 @@ PAYMENT_INSTRUCTIONS = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📌 *$1 per document check*
 Accepted as: *1 USDT* or *1 USDC*
-or *130 Kshs*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💳 *PAYMENT OPTIONS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -46,6 +48,42 @@ or *130 Kshs*
 ➡️ *Once paid, send your payment reference number here to proceed!*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """.strip()
+
+FOLLOWUP_DELAY = 3 * 60  # 3 minutes in seconds
+
+
+def send_followup(chat_id):
+    """Wait 3 minutes then send a follow-up message with a Start New Check button."""
+    time.sleep(FOLLOWUP_DELAY)
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("📄 Start New Check", callback_data="new_check"))
+    bot.send_message(
+        chat_id,
+        "🔄 *Need another check?*\n\n"
+        "Tap the button below to submit a new document!",
+        parse_mode="Markdown",
+        reply_markup=markup,
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "new_check")
+def handle_new_check(call):
+    """Handle the Start New Check button tap."""
+    user = call.from_user
+    full_name = user.first_name + (" " + user.last_name if user.last_name else "")
+    set_user(user.id, {
+        "username":  user.username or "",
+        "full_name": full_name,
+        "status":    "pending_payment",
+    })
+    bot.answer_callback_query(call.id)
+    bot.send_message(
+        call.message.chat.id,
+        f"👋 Welcome back, {user.first_name}!\n\n"
+        "Let's get your next document checked.\n\n"
+        + PAYMENT_INSTRUCTIONS,
+        parse_mode="Markdown",
+    )
 
 
 @bot.message_handler(commands=["start"])
@@ -94,12 +132,25 @@ def handle_document(message):
         f"When done, use:\n`/sendreport {user.id}` and attach the report.",
         parse_mode="Markdown",
     )
-    admin_bot.forward_message(ADMIN_CHAT_ID, message.chat.id, message.message_id)
+    file_info = bot.get_file(doc.file_id)
+    downloaded = bot.download_file(file_info.file_path)
+    admin_bot.send_document(
+        ADMIN_CHAT_ID,
+        downloaded,
+        visible_file_name=doc.file_name,
+        caption=f"📎 From {profile.get('full_name', user.first_name)} (ID: {user.id})",
+    )
 
     bot.send_message(
         message.chat.id,
         "📨 Your document has been received! We'll send your report within 24-48 hours. ✅"
     )
+
+
+def notify_report_sent(chat_id):
+    """Called by admin bot after sending report — triggers the follow-up message."""
+    t = threading.Thread(target=send_followup, args=(chat_id,), daemon=True)
+    t.start()
 
 
 @bot.message_handler(func=lambda m: True, content_types=["text"])
@@ -132,7 +183,13 @@ def handle_text(message):
     elif status == "doc_received":
         bot.send_message(message.chat.id, "⏳ Your document is being reviewed. We'll send your report soon!")
     elif status == "report_sent":
-        bot.send_message(message.chat.id, "✅ Your report has been sent. Use /start to submit a new document.")
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("📄 Start New Check", callback_data="new_check"))
+        bot.send_message(
+            message.chat.id,
+            "✅ Your report has already been sent!\n\nWant to check another document?",
+            reply_markup=markup,
+        )
     else:
         bot.send_message(message.chat.id, "Please complete payment and send your reference code to proceed.")
 
