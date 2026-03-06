@@ -18,6 +18,16 @@ import telebot
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.storage import get_user, set_user, all_users
 
+# Delay import to avoid circular imports
+def _notify_report_sent(chat_id):
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+        from user_bot.bot import notify_report_sent
+        notify_report_sent(chat_id)
+    except Exception as e:
+        pass
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -213,13 +223,18 @@ def handle_admin_document(message):
     user_id = pending_reports.pop(message.chat.id)
     profile = get_user(user_id)
 
+    # Download from admin bot and re-upload via user bot
+    file_info = bot.get_file(message.document.file_id)
+    downloaded = bot.download_file(file_info.file_path)
     user_bot.send_document(
         user_id,
-        message.document.file_id,
+        downloaded,
+        visible_file_name=message.document.file_name,
         caption="📋 *Your AI & Plagiarism Check Report is ready!*\n\nPlease review the attached document carefully. ✅",
         parse_mode="Markdown",
     )
     set_user(user_id, {"status": "report_sent"})
+    _notify_report_sent(user_id)
     bot.send_message(
         message.chat.id,
         f"✅ Report delivered to user `{user_id}` ({profile.get('full_name', '')}).",
