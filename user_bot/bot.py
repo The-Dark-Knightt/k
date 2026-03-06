@@ -24,30 +24,24 @@ PAYMENT_INSTRUCTIONS = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 *HOW IT WORKS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 1️⃣ Make your payment
 2️⃣ Send your payment reference here
 3️⃣ Wait for confirmation ✅
 4️⃣ Upload your document 📄
 5️⃣ Receive your report 📊
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 *PRICING*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 📌 *$1 per document check*
 Accepted as: *1 USDT* or *1 USDC*
-
+or *130 Kshs*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💳 *PAYMENT OPTIONS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 📱 *M-Pesa:*
 `0799023325`
-
 🔶 *Binance Pay ID:*
 `2938399390`
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ➡️ *Once paid, send your payment reference number here to proceed!*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
