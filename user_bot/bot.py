@@ -11,7 +11,7 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from shared.storage import get_user, set_user
+from shared.storage import get_user, set_user, get_admin_status
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,33 +27,48 @@ PAYMENT_INSTRUCTIONS = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 *HOW IT WORKS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 1️⃣ Make your payment
 2️⃣ Send your payment reference here
 3️⃣ Wait for confirmation ✅
-4️⃣ Upload your document 📄
+4️⃣ Upload your document(s) 📄
 5️⃣ Receive your report 📊
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 *PRICING*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 📌 *$1 per document check*
-Accepted as: *1 USDT* or *1 USDC*
+Accepted as: *1 USDT* 0R *130 Kshs*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💳 *PAYMENT OPTIONS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📱 *M-Pesa:*
-`0799023325`
-🔶 *Binance Pay ID:*
-`2938399390`
+📱 *M-Pesa:* `0799023325`
+🔶 *Binance Pay ID:* `2938399390`
+USDT (Tron(trc20): TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-➡️ *Once paid, send your payment reference number here to proceed!*
+➡️ *Once paid, send your payment reference number OR a screenshot of your payment here to proceed!*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """.strip()
 
-FOLLOWUP_DELAY = 3 * 60  # 3 minutes in seconds
 
+def get_status_line():
+    if get_admin_status() == "online":
+        return "\n🟢 Online"
+    return ""
+
+
+FOLLOWUP_DELAY  = 3 * 60   # 3 minutes before follow-up message
+COLLECT_SECONDS = 30        # seconds to wait for more files after first upload
+
+# Multi-file upload tracking per user
+user_files   = {}   # {user_id: [(file_id, file_name), ...]}
+user_timers  = {}   # {user_id: Timer}
+
+
+# ── Follow-up after report ─────────────────────────────────────────────────────
 
 def send_followup(chat_id):
-    """Wait 3 minutes then send a follow-up message with a Start New Check button."""
     time.sleep(FOLLOWUP_DELAY)
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("📄 Start New Check", callback_data="new_check"))
@@ -66,9 +81,14 @@ def send_followup(chat_id):
     )
 
 
+def notify_report_sent(chat_id):
+    """Called by admin bot after sending report — triggers the follow-up message."""
+    t = threading.Thread(target=send_followup, args=(chat_id,), daemon=True)
+    t.start()
+
+
 @bot.callback_query_handler(func=lambda call: call.data == "new_check")
 def handle_new_check(call):
-    """Handle the Start New Check button tap."""
     user = call.from_user
     full_name = user.first_name + (" " + user.last_name if user.last_name else "")
     set_user(user.id, {
@@ -81,10 +101,55 @@ def handle_new_check(call):
         call.message.chat.id,
         f"👋 Welcome back, {user.first_name}!\n\n"
         "Let's get your next document checked.\n\n"
-        + PAYMENT_INSTRUCTIONS,
+        + PAYMENT_INSTRUCTIONS + get_status_line(),
         parse_mode="Markdown",
     )
 
+
+# ── Multi-file upload finalizer ────────────────────────────────────────────────
+
+def _finalize_upload(user_id, chat_id, full_name):
+    """Called after COLLECT_SECONDS — forwards all collected files to admin."""
+    files = user_files.pop(user_id, [])
+    user_timers.pop(user_id, None)
+
+    if not files:
+        return
+
+    total = len(files)
+
+    # Notify admin
+    admin_bot.send_message(
+        ADMIN_CHAT_ID,
+        f"📄 *{total} Document(s) Received*\n\n"
+        f"👤 {full_name}  |  ID: `{user_id}`\n"
+        f"📎 Files: {', '.join(n for _, n in files)}\n\n"
+        f"When done, use:\n`/sendreport {user_id}` and attach the report(s).",
+        parse_mode="Markdown",
+    )
+
+    for file_id, file_name in files:
+        file_info  = bot.get_file(file_id)
+        downloaded = bot.download_file(file_info.file_path)
+        admin_bot.send_document(
+            ADMIN_CHAT_ID,
+            downloaded,
+            visible_file_name=file_name,
+            caption=f"📎 From {full_name} (ID: {user_id})",
+        )
+
+    set_user(user_id, {"status": "doc_received"})
+
+    bot.send_message(
+        chat_id,
+        f"📨 *{total} document(s) received!*\n\n"
+        f"⏱ Your report will be ready in approximately *5-15 minutes*. "
+        f"We'll send it here as soon as it's done! ✅",
+        parse_mode="Markdown",
+    )
+
+
+# ── Handlers ───────────────────────────────────────────────────────────────────
 
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
@@ -100,7 +165,7 @@ def cmd_start(message):
         f"👋 Welcome, {user.first_name}!\n\n"
         "This bot lets you submit documents for *AI & plagiarism checking*.\n\n"
         "To get started, please complete a payment first.\n\n"
-        + PAYMENT_INSTRUCTIONS,
+        + PAYMENT_INSTRUCTIONS + get_status_line(),
         parse_mode="Markdown",
     )
 
@@ -115,43 +180,73 @@ def handle_document(message):
         msgs = {
             "pending_payment":  "❌ Please send your reference code first.",
             "pending_approval": "⏳ Still waiting for payment verification. Please wait.",
-            "doc_received":     "⏳ We already have your document. Please wait for your report.",
+            "doc_received":     "⏳ We already have your document(s). Please wait for your report.",
             "report_sent":      "✅ Your report was already sent. Use /start to submit a new document.",
         }
         bot.send_message(message.chat.id, msgs.get(status, "❌ Not authorised yet."))
         return
 
+    full_name = profile.get("full_name", user.first_name)
     doc = message.document
-    set_user(user.id, {"status": "doc_received", "file_id": doc.file_id, "file_name": doc.file_name})
 
-    admin_bot.send_message(
-        ADMIN_CHAT_ID,
-        f"📄 *Document Received*\n\n"
-        f"👤 {profile.get('full_name', user.first_name)}  |  ID: `{user.id}`\n"
-        f"📎 File: {doc.file_name}\n\n"
-        f"When done, use:\n`/sendreport {user.id}` and attach the report.",
-        parse_mode="Markdown",
-    )
-    file_info = bot.get_file(doc.file_id)
-    downloaded = bot.download_file(file_info.file_path)
-    admin_bot.send_document(
-        ADMIN_CHAT_ID,
-        downloaded,
-        visible_file_name=doc.file_name,
-        caption=f"📎 From {profile.get('full_name', user.first_name)} (ID: {user.id})",
-    )
+    # Collect file
+    if user.id not in user_files:
+        user_files[user.id] = []
+    user_files[user.id].append((doc.file_id, doc.file_name))
 
+    # Cancel existing timer and restart
+    if user.id in user_timers:
+        user_timers[user.id].cancel()
+
+    count = len(user_files[user.id])
     bot.send_message(
         message.chat.id,
-        "📨 Your document has been received! We'll send your report within 5 - 15 min. ✅"
+        f"📎 *File {count} received!*\n\nSend more files or wait {COLLECT_SECONDS} seconds and we'll process everything. ✅",
+        parse_mode="Markdown",
     )
 
+    timer = threading.Timer(COLLECT_SECONDS, _finalize_upload, args=[user.id, message.chat.id, full_name])
+    timer.daemon = True
+    timer.start()
+    user_timers[user.id] = timer
 
-def notify_report_sent(chat_id):
-    """Called by admin bot after sending report — triggers the follow-up message."""
-    t = threading.Thread(target=send_followup, args=(chat_id,), daemon=True)
-    t.start()
 
+
+@bot.message_handler(content_types=["photo"])
+def handle_photo(message):
+    user    = message.from_user
+    profile = get_user(user.id)
+    status  = profile.get("status", "pending_payment")
+
+    if status in ("pending_payment", "pending_approval"):
+        # Forward screenshot to admin
+        photo_id = message.photo[-1].file_id
+        file_info = bot.get_file(photo_id)
+        downloaded = bot.download_file(file_info.file_path)
+        admin_bot.send_photo(
+            ADMIN_CHAT_ID,
+            downloaded,
+            caption=(
+                f"🖼 *Payment Screenshot*\n\n"
+                f"👤 {profile.get('full_name', user.first_name)}  |  ID: `{user.id}`\n"
+                f"Ref Code: `{profile.get('ref_code', 'not sent yet')}`\n\n"
+                f"Use `/approve {user.id}` or `/reject {user.id}`."
+            ),
+            parse_mode="Markdown",
+        )
+        set_user(user.id, {"status": "pending_approval"})
+        bot.send_message(
+            message.chat.id,
+            "🖼 *Payment screenshot received!*\n\n"
+            "Our team will verify your payment shortly and notify you here. ✅",
+            parse_mode="Markdown",
+        )
+    else:
+        bot.send_message(
+            message.chat.id,
+            "❌ Please send your document as a *file* (PDF or Word), not as a photo.",
+            parse_mode="Markdown",
+        )
 
 @bot.message_handler(func=lambda m: True, content_types=["text"])
 def handle_text(message):
@@ -179,9 +274,14 @@ def handle_text(message):
             parse_mode="Markdown",
         )
     elif status == "approved":
-        bot.send_message(message.chat.id, "📎 You're approved! Please *send your document as a file* (PDF or Word).", parse_mode="Markdown")
+        bot.send_message(
+            message.chat.id,
+            "📎 You're approved! Please *send your document(s) as files* (PDF or Word).\n\n"
+            "You can send multiple files — just send them one after another!",
+            parse_mode="Markdown",
+        )
     elif status == "doc_received":
-        bot.send_message(message.chat.id, "⏳ Your document is being reviewed. We'll send your report soon!")
+        bot.send_message(message.chat.id, "⏳ Your document(s) are being reviewed. We'll send your report in ~15 minutes!")
     elif status == "report_sent":
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("📄 Start New Check", callback_data="new_check"))
