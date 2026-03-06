@@ -61,3 +61,19 @@ def get_user_by_ref(ref_code: str):
 def all_users() -> dict:
     with _lock:
         return _load()["users"]
+
+
+# ── Admin online/offline status ───────────────────────────────────────────────
+
+def get_admin_status() -> str:
+    """Returns 'online' or 'offline'."""
+    with _lock:
+        data = _load()
+        return data.get("admin_status", "online")
+
+
+def set_admin_status(status: str):
+    with _lock:
+        data = _load()
+        data["admin_status"] = status
+        _save(data)
