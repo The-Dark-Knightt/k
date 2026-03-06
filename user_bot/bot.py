@@ -21,17 +21,36 @@ bot       = telebot.TeleBot(USER_BOT_TOKEN)
 admin_bot = telebot.TeleBot(ADMIN_BOT_TOKEN)
 
 PAYMENT_INSTRUCTIONS = """
-💳 *Payment Instructions*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 *HOW IT WORKS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Please send your payment via one of the methods below, then return here with your reference code.
+1️⃣ Make your payment
+2️⃣ Send your payment reference here
+3️⃣ Wait for confirmation ✅
+4️⃣ Upload your document 📄
+5️⃣ Receive your report 📊
 
-• *M-Pesa / Bank Transfer:*  [your details here]
-• *PayPal:*  [your email here]
-• *Amount:*  $XX USD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 *PRICING*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Once payment is confirmed, you will receive a *Reference Code* from us.
+📌 *$1 per document check*
+Accepted as: *1 USDT* or *1 USDC*
 
-➡️ Send that Reference Code here to proceed.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💳 *PAYMENT OPTIONS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 *M-Pesa:*
+`0799023325`
+
+🔶 *Binance Pay ID:*
+`2938399390`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+➡️ *Once paid, send your payment reference number here to proceed!*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """.strip()
 
 
