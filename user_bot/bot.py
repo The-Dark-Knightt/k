@@ -35,6 +35,7 @@ PAYMENT_INSTRUCTIONS = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 *PRICING*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*For Trial or Support: @daemonizerr*
 📌 *$1 per document check*
 Accepted as: *1 USDT* or *130 Kshs*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -47,7 +48,6 @@ Accepted as: *1 USDT* or *130 Kshs*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ➡️ *Once paid, send your payment reference number OR a screenshot of your payment here to proceed!*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Support: @daemonizerr
 """.strip()
 
 FOLLOWUP_DELAY = 3 * 60  # 3 minutes before follow-up message
