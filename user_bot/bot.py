@@ -31,7 +31,7 @@ PAYMENT_INSTRUCTIONS = """
 2️⃣ Send your payment reference here
 3️⃣ Wait for confirmation ✅
 4️⃣ Upload your document 📄
-5️⃣ Receive your report 📊
+5️⃣ Receive your reports (AI&Plag) 📊
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 *PRICING*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
