@@ -150,13 +150,16 @@ def handle_document(message):
 
     file_info  = bot.get_file(doc.file_id)
     downloaded = bot.download_file(file_info.file_path)
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.add(telebot.types.InlineKeyboardButton("📤 Send Report", callback_data=f"sendreport_{user.id}"))
     admin_bot.send_message(
         ADMIN_CHAT_ID,
         f"📄 *Document Received*\n\n"
         f"👤 {full_name}  |  ID: `{user.id}`\n"
-        f"📎 File: {doc.file_name}\n\n"
-        f"When done, use:\n`/sendreport {user.id}` and attach the report.",
+        f"📎 File: {doc.file_name}\n"
+        f"📂 Submissions remaining: *{new_count}*",
         parse_mode="Markdown",
+        reply_markup=markup,
     )
     admin_bot.send_document(
         ADMIN_CHAT_ID,
@@ -183,16 +186,21 @@ def handle_photo(message):
         photo_id   = message.photo[-1].file_id
         file_info  = bot.get_file(photo_id)
         downloaded = bot.download_file(file_info.file_path)
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            telebot.types.InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user.id}"),
+            telebot.types.InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user.id}"),
+        )
         admin_bot.send_photo(
             ADMIN_CHAT_ID,
             downloaded,
             caption=(
                 f"🖼 *Payment Screenshot*\n\n"
                 f"👤 {profile.get('full_name', user.first_name)}  |  ID: `{user.id}`\n"
-                f"Ref Code: `{profile.get('ref_code', 'not sent yet')}`\n\n"
-                f"Use `/approve {user.id} <submissions>` or `/reject {user.id}`."
+                f"Ref Code: `{profile.get('ref_code', 'not sent yet')}`"
             ),
             parse_mode="Markdown",
+            reply_markup=markup,
         )
         set_user(user.id, {"status": "pending_approval"})
         bot.send_message(
@@ -219,14 +227,19 @@ def handle_text(message):
     if status in ("pending_payment", "pending_approval"):
         ref = text.upper()
         set_user(user.id, {"status": "pending_approval", "ref_code": ref})
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            telebot.types.InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user.id}"),
+            telebot.types.InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user.id}"),
+        )
         admin_bot.send_message(
             ADMIN_CHAT_ID,
             f"🔔 *New Ref Code Submitted*\n\n"
             f"👤 Name: {profile.get('full_name', user.first_name)}\n"
             f"🆔 User ID: `{user.id}`\n"
-            f"🔑 Ref Code: `{ref}`\n\n"
-            f"Use `/approve {user.id} <submissions>` to unlock their upload.",
+            f"🔑 Ref Code: `{ref}`",
             parse_mode="Markdown",
+            reply_markup=markup,
         )
         bot.send_message(
             message.chat.id,
