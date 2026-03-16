@@ -24,30 +24,24 @@ bot       = telebot.TeleBot(USER_BOT_TOKEN)
 admin_bot = telebot.TeleBot(ADMIN_BOT_TOKEN)
 
 PAYMENT_INSTRUCTIONS = """
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 *HOW IT WORKS*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1️⃣ Make your payment
-2️⃣ Send your payment reference here
-3️⃣ Wait for confirmation ✅
-4️⃣ Upload your document 📄
-5️⃣ Receive your reports (AI&Plag) 📊
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 *PRICING*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-*For Trial or Support: @daemonizerr*
-📌 *$1 per document check*
-Accepted as: *1 USDT* or *130 Kshs*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💳 *PAYMENT OPTIONS*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📱 *M-Pesa:* `0799023325`
-🔶 *USDC (SOL Solana* `BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1`
-💎 *USDT (Tron TRC20):*
-`TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E`
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-➡️ *Once paid, send your payment reference number OR a screenshot of your payment here to proceed!*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 *Price:* $1 per check — 1 USDT or 130 Kshs
+
+📋 *How it works*
+1️⃣ Pay for your check
+2️⃣ Send payment proof or reference
+3️⃣ Upload your document 📄
+4️⃣ Receive your AI & Plag reports 📊
+
+💳 *Payment Options*
+📱 M-Pesa: `0799023325`
+🔶 USDC (Solana): `BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1`
+💎 USDT (TRC20): `TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E`
+
+⭐ *Reviews & Announcements*
+https://t.me/reviewstransactions
+
+🎁 *Bonus:* Bring 2 clients and get 1 free check from support.
+🛠 *Support:* @daemonizerr
 """.strip()
 
 FOLLOWUP_DELAY = 3 * 60  # 3 minutes before follow-up message
@@ -55,22 +49,30 @@ FOLLOWUP_DELAY = 3 * 60  # 3 minutes before follow-up message
 
 def get_status_line():
     if get_admin_status() == "online":
-        return "\n🟢 Online"
-    return ""
+        return "\n\n🟢 Online"
+    return "\n\n🔴 Offline"
 
 
 def send_followup(chat_id):
-    """Wait 3 minutes then send a follow-up message with a Start New Check button."""
+    """Wait 3 minutes then send a follow-up message."""
     time.sleep(FOLLOWUP_DELAY)
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("📄 Start New Check", callback_data="new_check"))
-    bot.send_message(
-        chat_id,
-        "🔄 *Need another check?*\n\n"
-        "Tap the button below to submit a new document!",
-        parse_mode="Markdown",
-        reply_markup=markup,
-    )
+    profile = get_user(chat_id)
+    submissions = profile.get("submissions", 0)
+
+    if submissions > 0:
+        bot.send_message(
+            chat_id,
+            f"📄 *Ready for your next document?*\n"
+            f"You have *{submissions} submission(s)* remaining — go ahead and upload your file!",
+            parse_mode="Markdown",
+        )
+    else:
+        bot.send_message(
+            chat_id,
+            "✅ *All submissions used.*\n"
+            "Use /start to submit a new document.",
+            parse_mode="Markdown",
+        )
 
 
 def notify_report_sent(chat_id):
@@ -87,6 +89,7 @@ def handle_new_check(call):
         "username":  user.username or "",
         "full_name": full_name,
         "status":    "pending_payment",
+        "submissions": 0,
     })
     bot.answer_callback_query(call.id)
     bot.send_message(
@@ -106,12 +109,11 @@ def cmd_start(message):
         "username":  user.username or "",
         "full_name": full_name,
         "status":    "pending_payment",
+        "submissions": 0,
     })
     bot.send_message(
         message.chat.id,
         f"👋 Welcome, {user.first_name}!\n\n"
-        "This bot lets you submit documents for *AI & plagiarism checking*.\n\n"
-        "To get started, please complete a payment first.\n\n"
         + PAYMENT_INSTRUCTIONS + get_status_line(),
         parse_mode="Markdown",
     )
@@ -125,17 +127,26 @@ def handle_document(message):
 
     if status != "approved":
         msgs = {
-            "pending_payment":  "❌ Please send your reference code first.",
-            "pending_approval": "⏳ Still waiting for payment verification. Please wait.",
+            "pending_payment":  "❌ Please send your payment reference or screenshot first.",
+            "pending_approval": "⏳ Still waiting for payment verification. Please hold on.",
             "doc_received":     "⏳ We already have your document. Your report will be ready in 5–15 minutes!",
             "report_sent":      "✅ Your report was already sent. Use /start to submit a new document.",
         }
         bot.send_message(message.chat.id, msgs.get(status, "❌ Not authorised yet."))
         return
 
-    full_name = profile.get("full_name", user.first_name)
-    doc = message.document
-    set_user(user.id, {"status": "doc_received", "file_id": doc.file_id, "file_name": doc.file_name})
+    full_name   = profile.get("full_name", user.first_name)
+    submissions = profile.get("submissions", 1)
+    doc         = message.document
+
+    # Deduct one submission
+    new_count = max(0, submissions - 1)
+    set_user(user.id, {
+        "status":      "doc_received",
+        "file_id":     doc.file_id,
+        "file_name":   doc.file_name,
+        "submissions": new_count,
+    })
 
     file_info  = bot.get_file(doc.file_id)
     downloaded = bot.download_file(file_info.file_path)
@@ -155,9 +166,9 @@ def handle_document(message):
     )
     bot.send_message(
         message.chat.id,
-        "📨 *Document received!*\n\n"
-        "⏱ Your report will be ready in approximately *5–15 minutes*. "
-        "We'll send it here as soon as it's done! ✅",
+        f"📨 *Document received!*\n"
+        f"⏱ Your report will be ready in approximately *5–15 minutes.*\n"
+        f"📂 Submissions remaining: *{new_count}*",
         parse_mode="Markdown",
     )
 
@@ -179,7 +190,7 @@ def handle_photo(message):
                 f"🖼 *Payment Screenshot*\n\n"
                 f"👤 {profile.get('full_name', user.first_name)}  |  ID: `{user.id}`\n"
                 f"Ref Code: `{profile.get('ref_code', 'not sent yet')}`\n\n"
-                f"Use `/approve {user.id}` or `/reject {user.id}`."
+                f"Use `/approve {user.id} <submissions>` or `/reject {user.id}`."
             ),
             parse_mode="Markdown",
         )
@@ -214,7 +225,7 @@ def handle_text(message):
             f"👤 Name: {profile.get('full_name', user.first_name)}\n"
             f"🆔 User ID: `{user.id}`\n"
             f"🔑 Ref Code: `{ref}`\n\n"
-            f"Use `/approve {user.id}` to unlock their upload.",
+            f"Use `/approve {user.id} <submissions>` to unlock their upload.",
             parse_mode="Markdown",
         )
         bot.send_message(
@@ -224,21 +235,31 @@ def handle_text(message):
             parse_mode="Markdown",
         )
     elif status == "approved":
+        submissions = profile.get("submissions", 0)
         bot.send_message(
             message.chat.id,
-            "📎 You're approved! Please *send your document as a file* (PDF or Word).",
+            f"📎 You're approved! Please *send your document as a file* (PDF or Word).\n"
+            f"📂 Submissions remaining: *{submissions}*",
             parse_mode="Markdown",
         )
     elif status == "doc_received":
         bot.send_message(message.chat.id, "⏳ Your document is being reviewed. Your report will be ready in 5–15 minutes!")
     elif status == "report_sent":
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("📄 Start New Check", callback_data="new_check"))
-        bot.send_message(
-            message.chat.id,
-            "✅ Your report has already been sent!\n\nWant to check another document?",
-            reply_markup=markup,
-        )
+        submissions = profile.get("submissions", 0)
+        if submissions > 0:
+            bot.send_message(
+                message.chat.id,
+                f"📄 *Ready for your next document?*\n"
+                f"You have *{submissions} submission(s)* remaining — go ahead and upload your file!",
+                parse_mode="Markdown",
+            )
+        else:
+            bot.send_message(
+                message.chat.id,
+                "✅ *All submissions used.*\n"
+                "Use /start to submit a new document.",
+                parse_mode="Markdown",
+            )
     else:
         bot.send_message(message.chat.id, "Please complete payment and send your reference code to proceed.")
 
