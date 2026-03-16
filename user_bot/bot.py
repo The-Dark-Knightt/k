@@ -105,10 +105,31 @@ def handle_new_check(call):
 def cmd_start(message):
     user = message.from_user
     full_name = user.first_name + (" " + user.last_name if user.last_name else "")
+    existing = get_user(user.id)
+    existing_subs = existing.get("submissions", 0)
+    existing_status = existing.get("status", "pending_payment")
+
+    # If user still has submissions left, dont reset — redirect them to upload
+    if existing_subs > 0 and existing_status in ("approved", "report_sent"):
+        set_user(user.id, {
+            "username":  user.username or "",
+            "full_name": full_name,
+            "status":    "approved",
+        })
+        bot.send_message(
+            message.chat.id,
+            f"👋 Welcome back, {user.first_name}!\n\n"
+            f"📂 You still have *{existing_subs} submission(s)* remaining.\n"
+            f"Go ahead and upload your document! 📎",
+            parse_mode="Markdown",
+        )
+        return
+
+    # Fresh start — reset everything
     set_user(user.id, {
-        "username":  user.username or "",
-        "full_name": full_name,
-        "status":    "pending_payment",
+        "username":    user.username or "",
+        "full_name":   full_name,
+        "status":      "pending_payment",
         "submissions": 0,
     })
     bot.send_message(
@@ -125,12 +146,18 @@ def handle_document(message):
     profile = get_user(user.id)
     status  = profile.get("status", "pending_payment")
 
+    # If report was sent but user still has submissions, treat them as approved
+    submissions_left = profile.get("submissions", 0)
+    if status == "report_sent" and submissions_left > 0:
+        set_user(user.id, {"status": "approved"})
+        status = "approved"
+
     if status != "approved":
         msgs = {
             "pending_payment":  "❌ Please send your payment reference or screenshot first.",
             "pending_approval": "⏳ Still waiting for payment verification. Please hold on.",
             "doc_received":     "⏳ We already have your document. Your report will be ready in 5–15 minutes!",
-            "report_sent":      "✅ Your report was already sent. Use /start to submit a new document.",
+            "report_sent":      "✅ All submissions used. Use /start to submit a new document.",
         }
         bot.send_message(message.chat.id, msgs.get(status, "❌ Not authorised yet."))
         return
