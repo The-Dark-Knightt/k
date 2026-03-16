@@ -25,9 +25,8 @@ admin_bot = telebot.TeleBot(ADMIN_BOT_TOKEN)
 
 PAYMENT_INSTRUCTIONS = """
 💰 *Price:* $1 per check — 1 USDT or 130 Kshs
-📋 *How it works*
-1️⃣ Pay for your check
-2️⃣ Send payment proof or reference
+1️⃣ *Pay* for your check
+2️⃣ *Send payment proof* or reference
 3️⃣ Upload your document 📄
 4️⃣ Receive your AI & Plag reports 📊
 
@@ -36,12 +35,12 @@ PAYMENT_INSTRUCTIONS = """
 🔶 USDC (Solana): `BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1`
 💎 USDT (TRC20): `TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E`
 
-➡️ Once paid, send your payment reference number OR a screenshot to proceed!
+➡️ *Once paid, send your payment screenshot*
+OR reference to proceed!
 
 ⭐ *Reviews & Announcements*
 https://t.me/reviewstransactions
 
-🎁 *Bonus:* Bring 2 clients and get 1 free check from support.
 🛠 *Support:* @daemonizerr
 """.strip()
 
