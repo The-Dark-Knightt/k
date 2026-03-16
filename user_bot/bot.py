@@ -42,7 +42,7 @@ Accepted as: *1 USDT* or *130 Kshs*
 💳 *PAYMENT OPTIONS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📱 *M-Pesa:* `0799023325`
-🔶 *Binance Pay ID:* `528478207`
+🔶 *USDC (SOL Solana* `BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1`
 💎 *USDT (Tron TRC20):*
 `TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
