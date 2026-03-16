@@ -1,16 +1,5 @@
 """
-ADMIN BOT – your private control panel
-Commands:
-  /pending                   - list users waiting for approval
-  /approve <user_id> [n]     - approve a user with n submissions (default 1)
-  /reject <user_id>          - reject a user
-  /status <user_id>          - check a user's status
-  /list                      - see all users
-  /sendreport <user_id>      - then send a file to deliver report
-  /done                      - finalize and deliver report immediately
-  /online                    - set status to online
-  /offline                   - set status to offline
-  /help                      - show commands
+ADMIN BOT – button-driven control panel
 """
 
 import logging
@@ -18,6 +7,7 @@ import os
 import sys
 import threading
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.storage import get_user, set_user, all_users, set_admin_status, get_admin_status
@@ -42,12 +32,14 @@ user_bot = telebot.TeleBot(USER_BOT_TOKEN)
 
 # Track pending report deliveries: {admin_chat_id: user_id}
 pending_reports = {}
-# Track files already sent per session: {admin_chat_id: [file_ids]}
+# Track files already sent per session: {admin_chat_id: [(file_id, file_name)]}
 pending_files = {}
 # Track timers that finalize delivery: {admin_chat_id: Timer}
 pending_timers = {}
+# Track which user we're waiting to set submissions for: {admin_chat_id: user_id}
+pending_approval = {}
 
-COLLECT_SECONDS = 30  # seconds to wait for more files after first one
+COLLECT_SECONDS = 30
 
 STATUS_EMOJI = {
     "pending_payment":  "💳",
@@ -66,46 +58,225 @@ def admin_only(func):
     return wrapper
 
 
-@bot.message_handler(commands=["pending"])
+def admin_only_callback(func):
+    def wrapper(call):
+        if call.message.chat.id != ADMIN_CHAT_ID:
+            return
+        func(call)
+    return wrapper
+
+
+# ── Main Menu ─────────────────────────────────────────────────────────────────
+
+def main_menu_markup():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("📋 Pending", callback_data="menu_pending"),
+        InlineKeyboardButton("👥 All Users", callback_data="menu_list"),
+        InlineKeyboardButton("🟢 Online", callback_data="menu_online"),
+        InlineKeyboardButton("🔴 Offline", callback_data="menu_offline"),
+    )
+    return markup
+
+
+@bot.message_handler(commands=["start", "menu"])
 @admin_only
-def cmd_pending(message):
+def cmd_menu(message):
+    status = get_admin_status()
+    status_line = "🟢 You are currently *Online*" if status == "online" else "🔴 You are currently *Offline*"
+    bot.send_message(
+        message.chat.id,
+        f"👋 *Admin Panel*\n\n{status_line}\n\nWhat would you like to do?",
+        parse_mode="Markdown",
+        reply_markup=main_menu_markup(),
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "menu_main")
+@admin_only_callback
+def cb_main_menu(call):
+    status = get_admin_status()
+    status_line = "🟢 You are currently *Online*" if status == "online" else "🔴 You are currently *Offline*"
+    bot.edit_message_text(
+        f"👋 *Admin Panel*\n\n{status_line}\n\nWhat would you like to do?",
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode="Markdown",
+        reply_markup=main_menu_markup(),
+    )
+    bot.answer_callback_query(call.id)
+
+
+# ── Online / Offline ──────────────────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda call: call.data == "menu_online")
+@admin_only_callback
+def cb_online(call):
+    set_admin_status("online")
+    bot.answer_callback_query(call.id, "🟢 You are now Online")
+    status_line = "🟢 You are currently *Online*"
+    bot.edit_message_text(
+        f"👋 *Admin Panel*\n\n{status_line}\n\nWhat would you like to do?",
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode="Markdown",
+        reply_markup=main_menu_markup(),
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "menu_offline")
+@admin_only_callback
+def cb_offline(call):
+    set_admin_status("offline")
+    bot.answer_callback_query(call.id, "🔴 You are now Offline")
+    status_line = "🔴 You are currently *Offline*"
+    bot.edit_message_text(
+        f"👋 *Admin Panel*\n\n{status_line}\n\nWhat would you like to do?",
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode="Markdown",
+        reply_markup=main_menu_markup(),
+    )
+
+
+# ── Pending ───────────────────────────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda call: call.data == "menu_pending")
+@admin_only_callback
+def cb_pending(call):
     users = all_users()
     pending = {uid: u for uid, u in users.items() if u.get("status") == "pending_approval"}
+    bot.answer_callback_query(call.id)
     if not pending:
-        bot.send_message(message.chat.id, "✅ No users are currently waiting for approval.")
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("⬅️ Back", callback_data="menu_main"))
+        bot.edit_message_text(
+            "✅ No users are currently waiting for approval.",
+            call.message.chat.id,
+            call.message.message_id,
+            reply_markup=markup,
+        )
         return
+
     lines = ["*Users Pending Approval:*\n"]
     for uid, u in pending.items():
-        lines.append(f"👤 {u.get('full_name', 'Unknown')}  |  ID: `{uid}`\n   Ref: `{u.get('ref_code', 'N/A')}`\n   Use: `/approve {uid} <submissions>`\n")
-    bot.send_message(message.chat.id, "\n".join(lines), parse_mode="Markdown")
+        lines.append(
+            f"👤 {u.get('full_name', 'Unknown')}  |  ID: `{uid}`\n"
+            f"   Ref: `{u.get('ref_code', 'N/A')}`\n"
+        )
+
+    markup = InlineKeyboardMarkup(row_width=1)
+    for uid, u in pending.items():
+        markup.add(InlineKeyboardButton(
+            f"👤 {u.get('full_name', 'Unknown')} — Approve / Reject",
+            callback_data=f"user_action_{uid}"
+        ))
+    markup.add(InlineKeyboardButton("⬅️ Back", callback_data="menu_main"))
+
+    bot.edit_message_text(
+        "\n".join(lines),
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode="Markdown",
+        reply_markup=markup,
+    )
 
 
-@bot.message_handler(commands=["approve"])
-@admin_only
-def cmd_approve(message):
-    parts = message.text.split()
-    if len(parts) < 2:
-        bot.send_message(message.chat.id, "Usage: `/approve <user_id> [submissions]`\nExample: `/approve 123456789 3`", parse_mode="Markdown")
+# ── All Users ─────────────────────────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda call: call.data == "menu_list")
+@admin_only_callback
+def cb_list(call):
+    users = all_users()
+    bot.answer_callback_query(call.id)
+    if not users:
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("⬅️ Back", callback_data="menu_main"))
+        bot.edit_message_text("No users yet.", call.message.chat.id, call.message.message_id, reply_markup=markup)
         return
-    try:
-        user_id = int(parts[1])
-    except ValueError:
-        bot.send_message(message.chat.id, "❌ Invalid user ID.")
-        return
 
-    # Default to 1 submission if not specified
-    try:
-        submissions = int(parts[2]) if len(parts) >= 3 else 1
-        if submissions < 1:
-            raise ValueError
-    except ValueError:
-        bot.send_message(message.chat.id, "❌ Submissions must be a positive number.")
-        return
+    lines = ["*All Users:*\n"]
+    for uid, u in users.items():
+        status      = u.get("status", "unknown")
+        emoji       = STATUS_EMOJI.get(status, "❓")
+        submissions = u.get("submissions", 0)
+        lines.append(f"{emoji} `{uid}` – {u.get('full_name', 'N/A')} – `{status}` – {submissions} sub(s)")
 
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("⬅️ Back", callback_data="menu_main"))
+    bot.edit_message_text(
+        "\n".join(lines),
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode="Markdown",
+        reply_markup=markup,
+    )
+
+
+# ── User Action (Approve / Reject) ────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("user_action_"))
+@admin_only_callback
+def cb_user_action(call):
+    user_id = int(call.data.split("_")[2])
     profile = get_user(user_id)
-    if not profile:
-        bot.send_message(message.chat.id, "❌ User not found.")
-        return
+    bot.answer_callback_query(call.id)
+
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}"),
+        InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user_id}"),
+        InlineKeyboardButton("⬅️ Back",   callback_data="menu_pending"),
+    )
+    bot.edit_message_text(
+        f"👤 *{profile.get('full_name', 'Unknown')}*\n"
+        f"🆔 ID: `{user_id}`\n"
+        f"🔑 Ref: `{profile.get('ref_code', 'N/A')}`\n\n"
+        f"What would you like to do?",
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode="Markdown",
+        reply_markup=markup,
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("approve_"))
+@admin_only_callback
+def cb_approve(call):
+    user_id = int(call.data.split("_")[1])
+    profile = get_user(user_id)
+    bot.answer_callback_query(call.id)
+
+    # Show submission count buttons
+    pending_approval[call.message.chat.id] = user_id
+    markup = InlineKeyboardMarkup(row_width=4)
+    markup.add(
+        InlineKeyboardButton("1", callback_data=f"subs_{user_id}_1"),
+        InlineKeyboardButton("2", callback_data=f"subs_{user_id}_2"),
+        InlineKeyboardButton("3", callback_data=f"subs_{user_id}_3"),
+        InlineKeyboardButton("5", callback_data=f"subs_{user_id}_5"),
+    )
+    markup.add(InlineKeyboardButton("✏️ Enter custom number", callback_data=f"subs_{user_id}_custom"))
+    markup.add(InlineKeyboardButton("⬅️ Back", callback_data=f"user_action_{user_id}"))
+
+    bot.edit_message_text(
+        f"✅ Approving *{profile.get('full_name', 'Unknown')}*\n\n"
+        f"How many submissions would you like to allocate?",
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode="Markdown",
+        reply_markup=markup,
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("subs_") and not call.data.endswith("_custom"))
+@admin_only_callback
+def cb_set_submissions(call):
+    parts = call.data.split("_")
+    user_id     = int(parts[1])
+    submissions = int(parts[2])
+    profile     = get_user(user_id)
+    bot.answer_callback_query(call.id)
 
     set_user(user_id, {"status": "approved", "submissions": submissions})
     user_bot.send_message(
@@ -115,30 +286,38 @@ def cmd_approve(message):
         f"📎 Send your document as a file (PDF or Word) to get started.",
         parse_mode="Markdown",
     )
-    bot.send_message(
-        message.chat.id,
-        f"✅ User `{user_id}` ({profile.get('full_name', '')}) approved with *{submissions} submission(s)*.",
+    pending_approval.pop(call.message.chat.id, None)
+
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("⬅️ Back to Menu", callback_data="menu_main"))
+    bot.edit_message_text(
+        f"✅ *{profile.get('full_name', 'Unknown')}* approved with *{submissions} submission(s)*.",
+        call.message.chat.id,
+        call.message.message_id,
         parse_mode="Markdown",
+        reply_markup=markup,
     )
 
 
-@bot.message_handler(commands=["reject"])
-@admin_only
-def cmd_reject(message):
-    parts = message.text.split()
-    if len(parts) < 2:
-        bot.send_message(message.chat.id, "Usage: `/reject <user_id>`", parse_mode="Markdown")
-        return
-    try:
-        user_id = int(parts[1])
-    except ValueError:
-        bot.send_message(message.chat.id, "❌ Invalid user ID.")
-        return
+@bot.callback_query_handler(func=lambda call: call.data.startswith("subs_") and call.data.endswith("_custom"))
+@admin_only_callback
+def cb_custom_submissions(call):
+    user_id = int(call.data.split("_")[1])
+    bot.answer_callback_query(call.id)
+    pending_approval[call.message.chat.id] = user_id
+    bot.edit_message_text(
+        f"✏️ Enter the number of submissions for this user:",
+        call.message.chat.id,
+        call.message.message_id,
+    )
 
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("reject_"))
+@admin_only_callback
+def cb_reject(call):
+    user_id = int(call.data.split("_")[1])
     profile = get_user(user_id)
-    if not profile:
-        bot.send_message(message.chat.id, "❌ User not found.")
-        return
+    bot.answer_callback_query(call.id)
 
     set_user(user_id, {"status": "pending_payment"})
     user_bot.send_message(
@@ -147,119 +326,115 @@ def cmd_reject(message):
         "Please double-check your payment and send the correct reference code.",
         parse_mode="Markdown",
     )
-    bot.send_message(message.chat.id, f"🚫 User `{user_id}` rejected and notified.", parse_mode="Markdown")
+
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("⬅️ Back to Menu", callback_data="menu_main"))
+    bot.edit_message_text(
+        f"🚫 *{profile.get('full_name', 'Unknown')}* rejected and notified.",
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode="Markdown",
+        reply_markup=markup,
+    )
 
 
-@bot.message_handler(commands=["status"])
-@admin_only
-def cmd_status(message):
-    parts = message.text.split()
-    if len(parts) < 2:
-        bot.send_message(message.chat.id, "Usage: `/status <user_id>`", parse_mode="Markdown")
-        return
-    try:
-        user_id = int(parts[1])
-    except ValueError:
-        bot.send_message(message.chat.id, "❌ Invalid user ID.")
-        return
+# ── Send Report (button on document notification) ─────────────────────────────
 
+@bot.callback_query_handler(func=lambda call: call.data.startswith("sendreport_"))
+@admin_only_callback
+def cb_sendreport(call):
+    user_id = int(call.data.split("_")[1])
     profile = get_user(user_id)
-    if not profile:
-        bot.send_message(message.chat.id, "❌ User not found.")
-        return
+    bot.answer_callback_query(call.id)
 
-    status      = profile.get("status", "unknown")
-    emoji       = STATUS_EMOJI.get(status, "❓")
-    submissions = profile.get("submissions", 0)
+    pending_reports[call.message.chat.id] = user_id
     bot.send_message(
-        message.chat.id,
-        f"*User `{user_id}`*\n"
-        f"Name: {profile.get('full_name', 'N/A')}\n"
-        f"Ref: `{profile.get('ref_code', 'N/A')}`\n"
-        f"Status: {emoji} `{status}`\n"
-        f"Submissions remaining: *{submissions}*\n"
-        f"File: {profile.get('file_name', 'none')}",
+        call.message.chat.id,
+        f"📎 Now send the report file(s) for *{profile.get('full_name', 'Unknown')}* (`{user_id}`).\n"
+        f"Send all files then type /done or wait {COLLECT_SECONDS}s to deliver automatically.",
         parse_mode="Markdown",
     )
 
 
-@bot.message_handler(commands=["list"])
+# ── Text input handler (custom submissions) ───────────────────────────────────
+
+@bot.message_handler(func=lambda m: True, content_types=["text"])
 @admin_only
-def cmd_list(message):
-    users = all_users()
-    if not users:
-        bot.send_message(message.chat.id, "No users yet.")
-        return
-    lines = ["*All Users:*\n"]
-    for uid, u in users.items():
-        status      = u.get("status", "unknown")
-        emoji       = STATUS_EMOJI.get(status, "❓")
-        submissions = u.get("submissions", 0)
-        lines.append(f"{emoji} `{uid}` – {u.get('full_name', 'N/A')} – `{status}` – {submissions} sub(s)")
-    bot.send_message(message.chat.id, "\n".join(lines), parse_mode="Markdown")
+def handle_text(message):
+    admin_chat_id = message.chat.id
 
+    # Handle custom submission number input
+    if admin_chat_id in pending_approval:
+        user_id = pending_approval[admin_chat_id]
+        try:
+            submissions = int(message.text.strip())
+            if submissions < 1:
+                raise ValueError
+        except ValueError:
+            bot.send_message(admin_chat_id, "❌ Please enter a valid positive number.")
+            return
 
-@bot.message_handler(commands=["sendreport"])
-@admin_only
-def cmd_sendreport(message):
-    parts = message.text.split()
-    if len(parts) < 2:
-        bot.send_message(message.chat.id, "Usage: `/sendreport <user_id>` then send the file.", parse_mode="Markdown")
-        return
-    try:
-        user_id = int(parts[1])
-    except ValueError:
-        bot.send_message(message.chat.id, "❌ Invalid user ID.")
+        profile = get_user(user_id)
+        set_user(user_id, {"status": "approved", "submissions": submissions})
+        user_bot.send_message(
+            user_id,
+            f"✅ *Payment verified!*\n"
+            f"You've been allocated *{submissions} submission(s).*\n"
+            f"📎 Send your document as a file (PDF or Word) to get started.",
+            parse_mode="Markdown",
+        )
+        pending_approval.pop(admin_chat_id, None)
+        bot.send_message(
+            admin_chat_id,
+            f"✅ *{profile.get('full_name', 'Unknown')}* approved with *{submissions} submission(s)*.",
+            parse_mode="Markdown",
+            reply_markup=main_menu_markup(),
+        )
         return
 
-    profile = get_user(user_id)
-    if not profile:
-        bot.send_message(message.chat.id, "❌ User not found.")
-        return
-
-    pending_reports[message.chat.id] = user_id
+    # Fallback — show menu
     bot.send_message(
-        message.chat.id,
-        f"📎 Now send the report file for user `{user_id}` ({profile.get('full_name', '')}).",
-        parse_mode="Markdown",
+        admin_chat_id,
+        "Use the menu below to manage your users.",
+        reply_markup=main_menu_markup(),
     )
 
 
-@bot.message_handler(commands=["online"])
+# ── Document handler (report delivery) ───────────────────────────────────────
+
+@bot.message_handler(content_types=["document"])
 @admin_only
-def cmd_online(message):
-    set_admin_status("online")
-    bot.send_message(message.chat.id, "🟢 Status set to *Online*. Users will see you as online.", parse_mode="Markdown")
+def handle_admin_document(message):
+    if message.chat.id not in pending_reports:
+        bot.send_message(
+            message.chat.id,
+            "ℹ️ Tap *Send Report* on a document notification first, or use /sendreport `<user_id>`.",
+            parse_mode="Markdown",
+        )
+        return
 
+    admin_chat_id = message.chat.id
 
-@bot.message_handler(commands=["offline"])
-@admin_only
-def cmd_offline(message):
-    set_admin_status("offline")
-    bot.send_message(message.chat.id, "🔴 Status set to *Offline*. Users will see you as offline.", parse_mode="Markdown")
+    if admin_chat_id not in pending_files:
+        pending_files[admin_chat_id] = []
+    pending_files[admin_chat_id].append((message.document.file_id, message.document.file_name))
 
+    if admin_chat_id in pending_timers:
+        pending_timers[admin_chat_id].cancel()
 
-@bot.message_handler(commands=["help"])
-@admin_only
-def cmd_help(message):
+    count = len(pending_files[admin_chat_id])
     bot.send_message(
-        message.chat.id,
-        "*Admin Commands*\n\n"
-        "/pending – users waiting for approval\n"
-        "/approve `<id> [n]` – approve user with n submissions (default 1)\n"
-        "/reject `<id>` – reject & notify user\n"
-        "/status `<id>` – check one user's status\n"
-        "/list – see all users\n"
-        "/sendreport `<id>` – then send file to deliver report\n"
-        "/done – deliver files immediately without waiting\n"
-        "/online – set status to 🟢 Online\n"
-        "/offline – set status to 🔴 Offline\n",
-        parse_mode="Markdown",
+        admin_chat_id,
+        f"📎 File {count} received. Send more or wait {COLLECT_SECONDS}s to auto-deliver. Type /done to deliver now.",
     )
+
+    timer = threading.Timer(COLLECT_SECONDS, _finalize_report, args=[admin_chat_id])
+    timer.daemon = True
+    timer.start()
+    pending_timers[admin_chat_id] = timer
 
 
 def _finalize_report(admin_chat_id):
-    """Called after COLLECT_SECONDS — delivers all collected files to user."""
     user_id = pending_reports.pop(admin_chat_id, None)
     files   = pending_files.pop(admin_chat_id, [])
     pending_timers.pop(admin_chat_id, None)
@@ -274,7 +449,7 @@ def _finalize_report(admin_chat_id):
         file_info  = bot.get_file(file_id)
         downloaded = bot.download_file(file_info.file_path)
         caption = (
-            f"📋 *Your AI & Plagiarism Check Report is ready!*\n\nPlease review the attached document carefully. ✅"
+            "📋 *Your AI & Plagiarism Check Report is ready!*\n\nPlease review the attached document carefully. ✅"
             if i == 0 else f"📎 File {i+1} of {total}"
         )
         user_bot.send_document(
@@ -289,49 +464,59 @@ def _finalize_report(admin_chat_id):
     _notify_report_sent(user_id)
     bot.send_message(
         admin_chat_id,
-        f"✅ {total} file(s) delivered to user `{user_id}` ({profile.get('full_name', '')}).",
+        f"✅ {total} file(s) delivered to *{profile.get('full_name', '')}* (`{user_id}`).",
         parse_mode="Markdown",
+        reply_markup=main_menu_markup(),
     )
-
-
-@bot.message_handler(content_types=["document"])
-@admin_only
-def handle_admin_document(message):
-    if message.chat.id not in pending_reports:
-        bot.send_message(message.chat.id, "ℹ️ Use `/sendreport <user_id>` before sending a file.", parse_mode="Markdown")
-        return
-
-    admin_chat_id = message.chat.id
-
-    if admin_chat_id not in pending_files:
-        pending_files[admin_chat_id] = []
-    pending_files[admin_chat_id].append((message.document.file_id, message.document.file_name))
-
-    # Cancel existing timer and restart it
-    if admin_chat_id in pending_timers:
-        pending_timers[admin_chat_id].cancel()
-
-    count = len(pending_files[admin_chat_id])
-    bot.send_message(
-        admin_chat_id,
-        f"📎 File {count} received. Send more files or wait {COLLECT_SECONDS}s to deliver all to user.",
-    )
-
-    timer = threading.Timer(COLLECT_SECONDS, _finalize_report, args=[admin_chat_id])
-    timer.daemon = True
-    timer.start()
-    pending_timers[admin_chat_id] = timer
 
 
 @bot.message_handler(commands=["done"])
 @admin_only
 def cmd_done(message):
     if message.chat.id not in pending_reports:
-        bot.send_message(message.chat.id, "ℹ️ No active report session. Use `/sendreport <user_id>` first.", parse_mode="Markdown")
+        bot.send_message(message.chat.id, "ℹ️ No active report session.", reply_markup=main_menu_markup())
         return
     if message.chat.id in pending_timers:
         pending_timers[message.chat.id].cancel()
     _finalize_report(message.chat.id)
+
+
+@bot.message_handler(commands=["sendreport"])
+@admin_only
+def cmd_sendreport(message):
+    parts = message.text.split()
+    if len(parts) < 2:
+        bot.send_message(message.chat.id, "Usage: `/sendreport <user_id>`", parse_mode="Markdown")
+        return
+    try:
+        user_id = int(parts[1])
+    except ValueError:
+        bot.send_message(message.chat.id, "❌ Invalid user ID.")
+        return
+    profile = get_user(user_id)
+    if not profile:
+        bot.send_message(message.chat.id, "❌ User not found.")
+        return
+    pending_reports[message.chat.id] = user_id
+    bot.send_message(
+        message.chat.id,
+        f"📎 Now send the report file(s) for *{profile.get('full_name', '')}* (`{user_id}`).",
+        parse_mode="Markdown",
+    )
+
+
+@bot.message_handler(commands=["help"])
+@admin_only
+def cmd_help(message):
+    bot.send_message(
+        message.chat.id,
+        "*Admin Commands*\n\n"
+        "/menu — open the main menu\n"
+        "/sendreport `<id>` — start a report session\n"
+        "/done — deliver files immediately\n",
+        parse_mode="Markdown",
+        reply_markup=main_menu_markup(),
+    )
 
 
 def main():
