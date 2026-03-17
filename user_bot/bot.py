@@ -127,11 +127,8 @@ def cmd_start(message):
         })
         bot.send_message(
             message.chat.id,
-            f"👋 Welcome back, {user.first_name}!
-
-"
-            f"📂 You still have *{existing_subs} submission(s)* remaining.
-"
+            f"👋 Welcome back, {user.first_name}!\n\n"
+            f"📂 You still have *{existing_subs} submission(s)* remaining.\n"
             f"Tap below to open the app and upload your document!",
             parse_mode="Markdown",
             reply_markup=open_app_markup(),
@@ -146,9 +143,7 @@ def cmd_start(message):
     })
     bot.send_message(
         message.chat.id,
-        f"👋 Welcome, {user.first_name}!
-
-"
+        f"👋 Welcome, {user.first_name}!\n\n"
         + PAYMENT_INSTRUCTIONS + get_status_line(),
         parse_mode="Markdown",
         reply_markup=open_app_markup(),
