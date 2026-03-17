@@ -25,8 +25,10 @@ admin_bot = telebot.TeleBot(ADMIN_BOT_TOKEN)
 
 PAYMENT_INSTRUCTIONS = """
 💰 *Price:* $1 per check — 1 USDT or 130 Kshs
-1️⃣ *Pay* for your check
-2️⃣ *Send payment proof* or reference
+
+📋 *How it works*
+1️⃣ Pay for your check
+2️⃣ Send payment proof or reference
 3️⃣ Upload your document 📄
 4️⃣ Receive your AI & Plag reports 📊
 
@@ -35,15 +37,14 @@ PAYMENT_INSTRUCTIONS = """
 🔶 USDC (Solana): `BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1`
 💎 USDT (TRC20): `TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E`
 
-➡️ *Once paid, send your payment screenshot*
-OR reference to proceed!
-
 ⭐ *Reviews & Announcements*
 https://t.me/reviewstransactions
 
+🎁 *Bonus:* Bring 2 clients and get 1 free check from support.
 🛠 *Support:* @daemonizerr
 """.strip()
 
+WEBAPP_URL = "https://the-dark-knightt.github.io/k/webapp/index.html"
 FOLLOWUP_DELAY = 3 * 60  # 3 minutes before follow-up message
 
 
@@ -101,6 +102,15 @@ def handle_new_check(call):
     )
 
 
+def open_app_markup():
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton(
+        "📱 Open App",
+        web_app=telebot.types.WebAppInfo(url=WEBAPP_URL)
+    ))
+    return markup
+
+
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
     user = message.from_user
@@ -109,7 +119,6 @@ def cmd_start(message):
     existing_subs = existing.get("submissions", 0)
     existing_status = existing.get("status", "pending_payment")
 
-    # If user still has submissions left, dont reset — redirect them to upload
     if existing_subs > 0 and existing_status in ("approved", "report_sent"):
         set_user(user.id, {
             "username":  user.username or "",
@@ -118,14 +127,17 @@ def cmd_start(message):
         })
         bot.send_message(
             message.chat.id,
-            f"👋 Welcome back, {user.first_name}!\n\n"
-            f"📂 You still have *{existing_subs} submission(s)* remaining.\n"
-            f"Go ahead and upload your document! 📎",
+            f"👋 Welcome back, {user.first_name}!
+
+"
+            f"📂 You still have *{existing_subs} submission(s)* remaining.
+"
+            f"Tap below to open the app and upload your document!",
             parse_mode="Markdown",
+            reply_markup=open_app_markup(),
         )
         return
 
-    # Fresh start — reset everything
     set_user(user.id, {
         "username":    user.username or "",
         "full_name":   full_name,
@@ -134,72 +146,12 @@ def cmd_start(message):
     })
     bot.send_message(
         message.chat.id,
-        f"👋 Welcome, {user.first_name}!\n\n"
+        f"👋 Welcome, {user.first_name}!
+
+"
         + PAYMENT_INSTRUCTIONS + get_status_line(),
         parse_mode="Markdown",
-    )
-
-
-@bot.message_handler(content_types=["document"])
-def handle_document(message):
-    user    = message.from_user
-    profile = get_user(user.id)
-    status  = profile.get("status", "pending_payment")
-
-    # If report was sent but user still has submissions, treat them as approved
-    submissions_left = profile.get("submissions", 0)
-    if status == "report_sent" and submissions_left > 0:
-        set_user(user.id, {"status": "approved"})
-        status = "approved"
-
-    if status != "approved":
-        msgs = {
-            "pending_payment":  "❌ Please send your payment reference or screenshot first.",
-            "pending_approval": "⏳ Still waiting for payment verification. Please hold on.",
-            "doc_received":     "⏳ We already have your document. Your report will be ready in 5–15 minutes!",
-            "report_sent":      "✅ All submissions used. Use /start to submit a new document.",
-        }
-        bot.send_message(message.chat.id, msgs.get(status, "❌ Not authorised yet."))
-        return
-
-    full_name   = profile.get("full_name", user.first_name)
-    submissions = profile.get("submissions", 1)
-    doc         = message.document
-
-    # Deduct one submission
-    new_count = max(0, submissions - 1)
-    set_user(user.id, {
-        "status":      "doc_received",
-        "file_id":     doc.file_id,
-        "file_name":   doc.file_name,
-        "submissions": new_count,
-    })
-
-    file_info  = bot.get_file(doc.file_id)
-    downloaded = bot.download_file(file_info.file_path)
-    markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(telebot.types.InlineKeyboardButton("📤 Send Report", callback_data=f"sendreport_{user.id}"))
-    admin_bot.send_message(
-        ADMIN_CHAT_ID,
-        f"📄 *Document Received*\n\n"
-        f"👤 {full_name}  |  ID: `{user.id}`\n"
-        f"📎 File: {doc.file_name}\n"
-        f"📂 Submissions remaining: *{new_count}*",
-        parse_mode="Markdown",
-        reply_markup=markup,
-    )
-    admin_bot.send_document(
-        ADMIN_CHAT_ID,
-        downloaded,
-        visible_file_name=doc.file_name,
-        caption=f"📎 From {full_name} (ID: {user.id})",
-    )
-    bot.send_message(
-        message.chat.id,
-        f"📨 *Document received!*\n"
-        f"⏱ Your report will be ready in approximately *5–15 minutes.*\n"
-        f"📂 Submissions remaining: *{new_count}*",
-        parse_mode="Markdown",
+        reply_markup=open_app_markup(),
     )
 
 
