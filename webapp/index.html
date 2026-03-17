@@ -332,7 +332,7 @@ function init() {
 
   document.getElementById('header-sub').textContent = `Hi, ${user.first_name}!`;
 
-  fetch(`https://YOUR-RAILWAY-APP.railway.app/api/user?id=${user.id}`)
+  fetch(`k-production-d882.up.railway.app/api/user?id=${user.id}`)
     .then(r => r.json())
     .then(data => {
       userData = data;
