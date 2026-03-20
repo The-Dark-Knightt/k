@@ -258,3 +258,52 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ── Web App Data handler (ref code submitted via Mini App) ────────────────────
+
+@bot.message_handler(content_types=["web_app_data"])
+def handle_webapp_data(message):
+    """
+    Receives data sent by tg.sendData() from the Mini App.
+    Currently handles: { "action": "submit_ref", "ref": "<code>" }
+    """
+    import json
+    user    = message.from_user
+    profile = get_user(user.id)
+    status  = profile.get("status", "pending_payment")
+
+    try:
+        payload = json.loads(message.web_app_data.data)
+    except Exception:
+        bot.send_message(message.chat.id, "❌ Could not read your submission. Please try again.")
+        return
+
+    if payload.get("action") == "submit_ref":
+        ref = payload.get("ref", "").strip().upper()
+        if not ref:
+            bot.send_message(message.chat.id, "❌ Empty reference code. Please try again.")
+            return
+
+        set_user(user.id, {"status": "pending_approval", "ref_code": ref})
+
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            telebot.types.InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user.id}"),
+            telebot.types.InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user.id}"),
+        )
+        admin_bot.send_message(
+            ADMIN_CHAT_ID,
+            f"🔔 *New Ref Code (via App)*\n\n"
+            f"👤 Name: {profile.get('full_name', user.first_name)}\n"
+            f"🆔 User ID: `{user.id}`\n"
+            f"🔑 Ref Code: `{ref}`",
+            parse_mode="Markdown",
+            reply_markup=markup,
+        )
+        bot.send_message(
+            message.chat.id,
+            f"✅ Reference code *{ref}* received!\n\n"
+            "Our team will verify your payment shortly and notify you here. 📄",
+            parse_mode="Markdown",
+        )
