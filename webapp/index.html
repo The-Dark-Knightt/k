@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI & Plag Checker</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #111);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  .header {
+    background: #2AABEE;
+    padding: 18px 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .header-title { color: #fff; font-size: 17px; font-weight: 600; }
+  .header-sub { color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 2px; }
+
+  .nav {
+    display: flex;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    background: var(--tg-theme-bg-color, #fff);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .nav-btn {
+    flex: 1; padding: 13px 4px; text-align: center;
+    font-size: 13px; color: #888; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .nav-btn.active { color: #2AABEE; border-bottom-color: #2AABEE; }
+
+  .tab { display: none; padding: 18px 16px; flex-direction: column; gap: 14px; }
+  .tab.active { display: flex; }
+
+  .status-card {
+    border-radius: 14px; padding: 16px;
+    background: #f0f8ff;
+    border: 1px solid #c8e3f8;
+  }
+  .status-label { font-size: 11px; color: #5a8fc9; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; font-weight: 500; }
+  .status-val { font-size: 16px; font-weight: 600; color: #1a3a5c; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+  .dot.pending { background: #f59e0b; }
+  .dot.waiting { background: #3b82f6; }
+  .dot.offline { background: #ef4444; }
+
+  .subs-row { display: flex; gap: 10px; }
+  .sub-card {
+    flex: 1; border-radius: 12px; padding: 14px 12px;
+    text-align: center; border: 1px solid #eee;
+    background: var(--tg-theme-bg-color, #fff);
+  }
+  .sub-num { font-size: 28px; font-weight: 600; color: #1a1a1a; }
+  .sub-lbl { font-size: 11px; color: #999; margin-top: 3px; }
+
+  .section-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .steps { display: flex; flex-direction: column; }
+  .step { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .step:last-child { border-bottom: none; }
+  .step-circle {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-circle.done { background: #22c55e; color: #fff; }
+  .step-circle.active { background: #2AABEE; color: #fff; box-shadow: 0 0 0 4px #d0eeff; }
+  .step-circle.idle { background: #f0f0f0; color: #bbb; }
+  .step-text { font-size: 14px; color: #333; padding-top: 4px; line-height: 1.4; }
+  .step-text small { font-size: 12px; color: #999; display: block; margin-top: 2px; }
+
+  .price-badge {
+    background: #f0f8ff; border-radius: 12px;
+    padding: 14px 16px; border: 1px solid #c8e3f8;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .price-label { font-size: 13px; color: #5a8fc9; }
+  .price-val { font-size: 16px; font-weight: 600; color: #1a3a5c; }
+
+  .payment-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .payment-item:last-child { border-bottom: none; }
+  .pay-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .pay-info { flex: 1; min-width: 0; }
+  .pay-name { font-size: 14px; font-weight: 500; color: #222; }
+  .pay-addr { font-size: 11px; color: #999; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .copy-btn {
+    font-size: 12px; color: #2AABEE; font-weight: 500;
+    cursor: pointer; padding: 6px 10px; border-radius: 8px;
+    background: #f0f8ff; border: none; flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .copy-btn:active { background: #d0eeff; }
+  .copy-btn.copied { color: #22c55e; background: #f0fff4; }
+
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-label { font-size: 13px; font-weight: 500; color: #555; }
+  .input-field {
+    width: 100%; padding: 13px 14px; border-radius: 12px;
+    border: 1.5px solid #e0e0e0; font-size: 15px;
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #111);
+    outline: none; transition: border-color 0.2s;
+  }
+  .input-field:focus { border-color: #2AABEE; }
+
+  .upload-zone {
+    border: 2px dashed #c0d8f0; border-radius: 16px;
+    padding: 32px 20px; text-align: center; background: #f5faff;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .upload-zone:active { background: #e8f4ff; border-color: #2AABEE; }
+  .upload-icon { font-size: 40px; margin-bottom: 10px; }
+  .upload-title { font-size: 15px; font-weight: 600; color: #1a3a5c; }
+  .upload-sub { font-size: 13px; color: #7a9ab8; margin-top: 5px; }
+
+  .main-btn {
+    width: 100%; padding: 15px; border-radius: 13px;
+    border: none; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .main-btn.primary { background: #2AABEE; color: #fff; }
+  .main-btn.primary:active { background: #1a95d5; transform: scale(0.98); }
+  .main-btn.secondary { background: #f2f2f2; color: #444; }
+  .main-btn.secondary:active { background: #e5e5e5; transform: scale(0.98); }
+  .main-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .alert {
+    border-radius: 12px; padding: 13px 15px;
+    font-size: 13px; line-height: 1.5;
+  }
+  .alert.info { background: #f0f8ff; color: #1a5a8c; border: 1px solid #c8e3f8; }
+  .alert.success { background: #f0fff4; color: #166534; border: 1px solid #bbf7d0; }
+  .alert.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+  .reviews-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 15px; background: #fffbeb;
+    border-radius: 12px; border: 1px solid #fde68a;
+    text-decoration: none; cursor: pointer;
+  }
+  .reviews-link span { font-size: 13px; color: #92400e; font-weight: 500; }
+
+  .loader { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+
+  .hidden { display: none !important; }
+
+  #screen-loading { padding: 40px 20px; text-align: center; color: #aaa; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">📄</div>
+  <div>
+    <div class="header-title">AI & Plag Checker</div>
+    <div class="header-sub" id="header-sub">Loading...</div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-btn active" onclick="showTab('home', event)">Home</div>
+  <div class="nav-btn" onclick="showTab('pay', event)">Payment</div>
+  <div class="nav-btn" onclick="showTab('upload', event)">Upload</div>
+</div>
+
+<!-- HOME TAB -->
+<div class="tab active" id="tab-home">
+  <div id="screen-loading">Loading your info...</div>
+
+  <div id="home-content" class="hidden" style="display:none; flex-direction:column; gap:14px;">
+    <div class="status-card">
+      <div class="status-label">Your status</div>
+      <div class="status-val"><span class="dot" id="status-dot"></span><span id="status-text">—</span></div>
+    </div>
+
+    <div class="subs-row" id="subs-row">
+      <div class="sub-card">
+        <div class="sub-num" id="subs-left">—</div>
+        <div class="sub-lbl">Submissions left</div>
+      </div>
+      <div class="sub-card" style="background:#f0fff4; border-color:#bbf7d0;">
+        <div class="sub-num" id="subs-used" style="color:#15803d;">—</div>
+        <div class="sub-lbl" style="color:#86efac;">Used</div>
+      </div>
+    </div>
+
+    <div class="section-title">Progress</div>
+    <div class="steps" id="steps-list"></div>
+
+    <div class="reviews-link" onclick="openLink('https://t.me/reviewstransactions')">
+      <span>⭐</span>
+      <span>Reviews & previous transactions</span>
+    </div>
+
+    <div class="alert info">
+      🎁 Bring 2 clients and get 1 free check from support!<br>
+      🛠 Support: <strong>@daemonizerr</strong>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT TAB -->
+<div class="tab" id="tab-pay">
+  <div class="price-badge">
+    <div class="price-label">Price per check</div>
+    <div class="price-val">$1 · 1 USDT · 130 Kshs</div>
+  </div>
+
+  <div class="section-title">Payment options</div>
+
+  <div>
+    <div class="payment-item">
+      <div class="pay-icon" style="background:#e8f5e9;">📱</div>
+      <div class="pay-info">
+        <div class="pay-name">M-Pesa</div>
+        <div class="pay-addr">0799023325</div>
+      </div>
+      <button class="copy-btn" onclick="copyText('0799023325', this)">Copy</button>
+    </div>
+
+    <div class="payment-item">
+      <div class="pay-icon" style="background:#fff3e0;">🔶</div>
+      <div class="pay-info">
+        <div class="pay-name">USDC (Solana)</div>
+        <div class="pay-addr">BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1</div>
+      </div>
+      <button class="copy-btn" onclick="copyText('BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1', this)">Copy</button>
+    </div>
+
+    <div class="payment-item">
+      <div class="pay-icon" style="background:#e8eaf6;">💎</div>
+      <div class="pay-info">
+        <div class="pay-name">USDT (TRC20)</div>
+        <div class="pay-addr">TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E</div>
+      </div>
+      <button class="copy-btn" onclick="copyText('TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E', this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="alert info">After paying, go to the <strong>Home</strong> tab and submit your reference code or screenshot.</div>
+
+  <div id="pay-ref-section">
+    <div class="section-title">Submit payment proof</div>
+    <div class="input-group">
+      <label class="input-label">Reference code (or send a screenshot below)</label>
+      <input type="text" class="input-field" id="ref-input" placeholder="e.g. QHG2BCXYZ8">
+    </div>
+    <button class="main-btn primary" onclick="submitRef()">Submit reference code</button>
+    <button class="main-btn secondary" onclick="sendScreenshot()">Send payment screenshot</button>
+  </div>
+</div>
+
+<!-- UPLOAD TAB -->
+<div class="tab" id="tab-upload">
+  <div class="status-card" id="upload-status-card">
+    <div class="status-label">Submissions remaining</div>
+    <div class="status-val" id="upload-subs-text">—</div>
+  </div>
+
+  <div id="upload-allowed">
+    <div class="upload-zone" onclick="sendDocument()">
+      <div class="upload-icon">📄</div>
+      <div class="upload-title">Upload your document</div>
+      <div class="upload-sub">Tap to send a PDF or Word file via chat</div>
+    </div>
+    <div class="alert info" style="margin-top: 14px;">
+      Your report will be ready in <strong>5–15 minutes</strong> after upload.
+    </div>
+  </div>
+
+  <div id="upload-blocked" class="hidden">
+    <div class="alert warning" id="upload-blocked-msg">—</div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+const BOT_USERNAME = 'daemonizerr'; // ← update to your actual bot username if different
+
+const STEPS = [
+  { key: 'paid',     label: 'Payment verified',       sub: '' },
+  { key: 'uploaded', label: 'Document received',       sub: '' },
+  { key: 'working',  label: 'Report being prepared',   sub: '5–15 minutes' },
+  { key: 'done',     label: 'Report delivered',        sub: '' },
+];
+
+const STATUS_MAP = {
+  pending_payment:  { text: 'Awaiting payment',       dot: 'pending',  step: -1 },
+  pending_approval: { text: 'Verifying payment...',   dot: 'waiting',  step: -1 },
+  approved:         { text: 'Approved — ready to upload', dot: '',    step: 0  },
+  doc_received:     { text: 'Report being prepared',  dot: 'waiting',  step: 2  },
+  report_sent:      { text: 'Report delivered',       dot: '',         step: 3  },
+};
+
+let userData = null;
+
+function init() {
+  const user = tg.initDataUnsafe?.user;
+  if (!user) {
+    document.getElementById('screen-loading').textContent = 'Could not load user info. Please reopen the app.';
+    return;
+  }
+
+  document.getElementById('header-sub').textContent = `Hi, ${user.first_name}!`;
+
+  fetch(`https://k-production-d882.up.railway.app/api/user?id=${user.id}`)
+    .then(r => r.json())
+    .then(data => {
+      userData = data;
+      renderHome(data);
+      renderUpload(data);
+      document.getElementById('screen-loading').style.display = 'none';
+      const hc = document.getElementById('home-content');
+      hc.classList.remove('hidden');
+      hc.style.display = 'flex';
+    })
+    .catch(() => {
+      document.getElementById('screen-loading').textContent = 'Could not connect. Please try again.';
+    });
+}
+
+function renderHome(data) {
+  const s = data.status || 'pending_payment';
+  const info = STATUS_MAP[s] || STATUS_MAP.pending_payment;
+  const subs = data.submissions || 0;
+  const totalAllocated = data.total_allocated || 0;
+  const used = Math.max(0, totalAllocated - subs);
+
+  document.getElementById('status-text').textContent = info.text;
+  const dot = document.getElementById('status-dot');
+  dot.className = 'dot ' + (info.dot || '');
+  if (!info.dot) dot.style.background = '#22c55e';
+
+  document.getElementById('subs-left').textContent = subs;
+  document.getElementById('subs-used').textContent = Math.max(0, used);
+
+  const stepsDone = info.step;
+  const stepsHtml = STEPS.map((step, i) => {
+    let cls = 'idle', label = i + 1;
+    if (i < stepsDone) { cls = 'done'; label = '✓'; }
+    else if (i === stepsDone) { cls = 'active'; }
+    return `<div class="step">
+      <div class="step-circle ${cls}">${label}</div>
+      <div class="step-text">${step.label}${step.sub && i === stepsDone ? `<small>${step.sub}</small>` : ''}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('steps-list').innerHTML = stepsHtml;
+}
+
+function renderUpload(data) {
+  const s = data.status || 'pending_payment';
+  const subs = data.submissions || 0;
+  const card = document.getElementById('upload-subs-text');
+  const allowed = document.getElementById('upload-allowed');
+  const blocked = document.getElementById('upload-blocked');
+  const blockedMsg = document.getElementById('upload-blocked-msg');
+
+  card.textContent = subs > 0 ? `${subs} check${subs !== 1 ? 's' : ''} available` : 'No submissions remaining';
+
+  const canUpload = (s === 'approved') || (s === 'report_sent' && subs > 0);
+
+  if (canUpload) {
+    allowed.classList.remove('hidden');
+    blocked.classList.add('hidden');
+  } else {
+    allowed.classList.add('hidden');
+    blocked.classList.remove('hidden');
+    const msgs = {
+      pending_payment:  '❌ Please complete payment first, then submit proof on the Payment tab.',
+      pending_approval: '⏳ Your payment is being verified. Please hold on.',
+      doc_received:     '⏳ Your document is already being reviewed. Your report will be ready in 5–15 minutes!',
+      report_sent:      '✅ All submissions used. Go to Payment to get more checks.',
+    };
+    blockedMsg.textContent = msgs[s] || '❌ Not authorised yet.';
+  }
+}
+
+function showTab(name, e) {
+  const clickedBtn = e ? e.currentTarget : document.querySelector(`.nav-btn[onclick*="${name}"]`);
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (clickedBtn) clickedBtn.classList.add('active');
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function submitRef() {
+  const val = document.getElementById('ref-input').value.trim();
+  if (!val) { tg.showAlert('Please enter your reference code.'); return; }
+  tg.sendData(JSON.stringify({ action: 'submit_ref', ref: val }));
+  tg.showAlert('Reference code submitted! We will verify and notify you shortly.');
+}
+
+function sendScreenshot() {
+  tg.showAlert('Please send your payment screenshot directly in the chat.');
+  setTimeout(() => tg.close(), 500);
+}
+
+function sendDocument() {
+  tg.showAlert('Please send your document (PDF or Word) directly in the chat.');
+  setTimeout(() => tg.close(), 500);
+}
+
+function openLink(url) {
+  tg.openLink(url);
+}
+
+init();
+</script>
+</body>
+</html>
