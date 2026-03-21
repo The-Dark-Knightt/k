@@ -411,7 +411,7 @@
         <div class="progress-text hidden" id="ss-progress-text"></div>
       </div>
       <div style="margin-top:10px;">
-        <button class="main-btn btn-secondary" id="screenshot-btn" onclick="submitScreenshot()" disabled>Send screenshot</button>
+        <button class="main-btn btn-secondary" id="screenshot-btn" onclick="submitScreenshot()">Send screenshot</button>
       </div>
     </div>
 
@@ -487,7 +487,7 @@
 
     <div class="wait-badge">⏳ Reports are usually ready in 5–15 minutes after upload</div>
 
-    <button class="main-btn btn-primary" id="upload-btn" onclick="uploadDoc()" disabled>Upload document</button>
+    <button class="main-btn btn-primary" id="upload-btn" onclick="uploadDoc()">Upload document</button>
   </div>
 
 </div>
@@ -751,7 +751,6 @@ function submitRef() {
   if (!user) { tg.showAlert('Could not read user info. Please reopen the app.'); return; }
 
   const btn = document.getElementById('ref-btn');
-  btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Submitting...';
 
   fetch(`${API_BASE}/api/submit_ref`, {
@@ -778,7 +777,6 @@ function submitRef() {
     })
     .catch(err => {
       tg.showAlert('❌ Submission failed: ' + err.message);
-      btn.disabled = false;
       btn.innerHTML = 'Submit reference code';
     });
 }
@@ -792,7 +790,6 @@ function onScreenshotPicked(event) {
   document.getElementById('screenshot-label').textContent = file.name;
   document.getElementById('screenshot-filename').textContent = '📷 ' + file.name;
   document.getElementById('screenshot-preview').classList.remove('hidden');
-  document.getElementById('screenshot-btn').disabled = false;
 }
 
 function submitScreenshot() {
@@ -802,7 +799,6 @@ function submitScreenshot() {
   if (!user) { tg.showAlert('Could not read user info. Please reopen the app.'); return; }
 
   const btn = document.getElementById('screenshot-btn');
-  btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Uploading...';
 
   const progressWrap = document.getElementById('ss-progress-wrap');
@@ -844,14 +840,12 @@ function submitScreenshot() {
       }
     } catch(e) {
       tg.showAlert('❌ Upload failed: ' + e.message);
-      btn.disabled = false;
       btn.innerHTML = 'Send screenshot';
     }
   };
 
   xhr.onerror = () => {
     tg.showAlert('❌ Upload failed. Please check your connection.');
-    btn.disabled = false;
     btn.innerHTML = 'Send screenshot';
   };
 
@@ -867,7 +861,6 @@ function onFilePicked(event) {
   document.getElementById('upload-title').textContent = file.name;
   document.getElementById('file-preview-name').textContent = '📄 ' + file.name;
   document.getElementById('file-preview-wrap').classList.remove('hidden');
-  document.getElementById('upload-btn').disabled = false;
 }
 
 // ── Upload document ───────────────────────────────────────────────────────────
@@ -882,7 +875,6 @@ function uploadDoc() {
   const progressBar  = document.getElementById('upload-progress-bar');
   const progressText = document.getElementById('upload-progress-text');
 
-  btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Uploading...';
   progressWrap.style.display = 'block';
 
@@ -924,14 +916,12 @@ function uploadDoc() {
       }
     } catch(e) {
       tg.showAlert('❌ Upload failed: ' + e.message);
-      btn.disabled = false;
       btn.innerHTML = 'Upload document';
     }
   };
 
   xhr.onerror = () => {
     tg.showAlert('❌ Upload failed. Please check your connection.');
-    btn.disabled = false;
     btn.innerHTML = 'Upload document';
   };
 
