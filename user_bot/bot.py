@@ -124,10 +124,10 @@ def handle_any(message):
 
     nudge_map = {
         "pending_payment":  "👆 Open the app to pay and submit your reference code.",
-        "pending_approval": "⏳ Your payment is being verified. We'll notify you here shortly!",
+        "pending_approval": "⏳ Payment being verified — we'll notify you shortly.",
         "approved":         "📎 Open the app to upload your document.",
-        "doc_received":     "⏳ Your document is being reviewed — report ready in 5–15 minutes!",
-        "report_sent":      "✅ Your report was sent. Open the app to start a new check.",
+        "doc_received":     "⏳ Document under review — report ready in 5–15 min.",
+        "report_sent":      "✅ Report sent. Open the app for a new check.",
     }
     msg = nudge_map.get(status, "Please use the app below to continue.")
     bot.send_message(message.chat.id, msg, reply_markup=open_app_markup())
