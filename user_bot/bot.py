@@ -60,16 +60,16 @@ def cmd_start(message):
             "full_name": full_name,
             "status":    "approved",
         })
-        bot.send_message(
-            message.chat.id,
-            f"👋 Welcome back, *{user.first_name}!*\n\n"
-            f"📂 You still have *{existing_subs} submission(s)* remaining.\n"
-            f"Tap below to open the app and upload your document!",
-            parse_mode="Markdown",
-            reply_markup=telebot.types.ReplyKeyboardRemove(),
-        )
-        bot.send_message(message.chat.id, "👇", reply_markup=open_app_markup())
-        return
+    bot.send_message(
+        message.chat.id,
+        f"👋 Welcome back, *{user.first_name}!*\n\n"
+        f"📂 You still have *{existing_subs} submission(s)* remaining.\n"
+        f"Tap below to open the app and upload your document!",
+        parse_mode="Markdown",
+        reply_markup=telebot.types.ReplyKeyboardRemove(),
+    )
+    bot.send_message(message.chat.id, "Open the app below:", reply_markup=open_app_markup())
+    return
 
     set_user(user.id, {
         "username":    user.username or "",
@@ -87,7 +87,7 @@ def cmd_start(message):
         parse_mode="Markdown",
         reply_markup=telebot.types.ReplyKeyboardRemove(),
     )
-    bot.send_message(message.chat.id, "👇", reply_markup=open_app_markup())
+    bot.send_message(message.chat.id, "Open the app below:", reply_markup=open_app_markup())
 
 
 # ── All text / file messages → redirect to app ────────────────────────────────
@@ -110,7 +110,7 @@ def handle_any(message):
         message.chat.id, msg,
         reply_markup=telebot.types.ReplyKeyboardRemove()
     )
-    bot.send_message(message.chat.id, "👇", reply_markup=open_app_markup())
+    bot.send_message(message.chat.id, "Open the app below:", reply_markup=open_app_markup())
 
 
 def main():
