@@ -1,11 +1,12 @@
 """
 webapp_api.py  —  HTTP API for the Telegram Mini App
 Endpoints:
-  GET  /api/user?id=...        → fetch user profile
-  POST /api/submit_ref         → submit payment reference code
-  POST /api/submit_screenshot  → submit payment screenshot image
-  POST /api/upload_doc         → upload document for checking
-  GET  /api/download/<user_id> → download report file
+  GET  /api/user?id=...               → fetch user profile
+  GET  /api/reports/<user_id>         → list report filenames + count
+  GET  /api/download/<user_id>/<idx>  → download specific report file by index
+  POST /api/submit_ref                → submit payment reference code
+  POST /api/submit_screenshot         → submit payment screenshot image
+  POST /api/upload_doc                → upload document for checking
 """
 
 import json
@@ -109,17 +110,31 @@ class APIHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 return _json(self, 500, {"error": str(e)})
 
-        if parsed.path.startswith("/api/download/"):
-            uid_str = parsed.path.split("/api/download/")[-1]
+        # GET /api/reports/<user_id>  → return list of filenames
+        if parsed.path.startswith("/api/reports/"):
+            uid_str = parsed.path.split("/api/reports/")[-1]
             try:
                 uid = int(uid_str)
             except ValueError:
                 return _json(self, 400, {"error": "bad user id"})
             with report_store_lock:
                 files = report_store.get(uid, [])
-            if not files:
-                return _json(self, 404, {"error": "no report available yet"})
-            file_bytes, filename = files[0]
+            filenames = [{"index": i, "filename": fname} for i, (_, fname) in enumerate(files)]
+            return _json(self, 200, {"reports": filenames, "count": len(filenames)})
+
+        # GET /api/download/<user_id>/<index>  → download one specific file
+        if parsed.path.startswith("/api/download/"):
+            parts = parsed.path.split("/api/download/")[-1].split("/")
+            try:
+                uid = int(parts[0])
+                idx = int(parts[1]) if len(parts) > 1 else 0
+            except (ValueError, IndexError):
+                return _json(self, 400, {"error": "bad user id or index"})
+            with report_store_lock:
+                files = report_store.get(uid, [])
+            if not files or idx >= len(files):
+                return _json(self, 404, {"error": "file not found"})
+            file_bytes, filename = files[idx]
             self.send_response(200)
             self.send_header("Content-Type", "application/octet-stream")
             self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
