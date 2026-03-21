@@ -1,5 +1,6 @@
 """
 USER BOT  –  student-facing side
+Role: notifications only. All input goes through the Mini App.
 """
 
 import logging
@@ -23,83 +24,14 @@ ADMIN_CHAT_ID   = int(os.environ["ADMIN_CHAT_ID"])
 bot       = telebot.TeleBot(USER_BOT_TOKEN)
 admin_bot = telebot.TeleBot(ADMIN_BOT_TOKEN)
 
-PAYMENT_INSTRUCTIONS = """
-💰 *Price:* $1 per check — 1 USDT or 130 Kshs
-
-📋 *How it works*
-1️⃣ Pay for your check
-2️⃣ Send payment proof or reference
-3️⃣ Upload your document 📄
-4️⃣ Receive your AI & Plag reports 📊
-
-💳 *Payment Options*
-📱 M-Pesa: `0799023325`
-🔶 USDC (Solana): `BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1`
-💎 USDT (TRC20): `TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E`
-
-⭐ *Reviews & Announcements*
-https://t.me/reviewstransactions
-
-🎁 *Bonus:* Bring 2 clients and get 1 free check from support.
-🛠 *Support:* @daemonizerr
-""".strip()
-
-WEBAPP_URL = "https://the-dark-knightt.github.io/k/webapp/index.html"
-FOLLOWUP_DELAY = 3 * 60  # 3 minutes before follow-up message
+WEBAPP_URL     = os.environ.get("WEBAPP_URL", "https://the-dark-knightt.github.io/k/webapp/index.html")
+FOLLOWUP_DELAY = 3 * 60
 
 
 def get_status_line():
     if get_admin_status() == "online":
-        return "\n\n🟢 Online"
-    return "\n\n🔴 Offline"
-
-
-def send_followup(chat_id):
-    """Wait 3 minutes then send a follow-up message."""
-    time.sleep(FOLLOWUP_DELAY)
-    profile = get_user(chat_id)
-    submissions = profile.get("submissions", 0)
-
-    if submissions > 0:
-        bot.send_message(
-            chat_id,
-            f"📄 *Ready for your next document?*\n"
-            f"You have *{submissions} submission(s)* remaining — go ahead and upload your file!",
-            parse_mode="Markdown",
-        )
-    else:
-        bot.send_message(
-            chat_id,
-            "✅ *All submissions used.*\n"
-            "Use /start to submit a new document.",
-            parse_mode="Markdown",
-        )
-
-
-def notify_report_sent(chat_id):
-    """Called by admin bot after sending report — triggers the follow-up message."""
-    t = threading.Thread(target=send_followup, args=(chat_id,), daemon=True)
-    t.start()
-
-
-@bot.callback_query_handler(func=lambda call: call.data == "new_check")
-def handle_new_check(call):
-    user = call.from_user
-    full_name = user.first_name + (" " + user.last_name if user.last_name else "")
-    set_user(user.id, {
-        "username":  user.username or "",
-        "full_name": full_name,
-        "status":    "pending_payment",
-        "submissions": 0,
-    })
-    bot.answer_callback_query(call.id)
-    bot.send_message(
-        call.message.chat.id,
-        f"👋 Welcome back, {user.first_name}!\n\n"
-        "Let's get your next document checked.\n\n"
-        + PAYMENT_INSTRUCTIONS + get_status_line(),
-        parse_mode="Markdown",
-    )
+        return "\n\n🟢 Online — we'll respond quickly!"
+    return "\n\n🔴 Currently offline — we'll get back to you soon."
 
 
 def open_app_markup():
@@ -111,12 +43,42 @@ def open_app_markup():
     return markup
 
 
+def send_followup(chat_id):
+    time.sleep(FOLLOWUP_DELAY)
+    profile     = get_user(chat_id)
+    submissions = profile.get("submissions", 0)
+    if submissions > 0:
+        bot.send_message(
+            chat_id,
+            f"📄 *Ready for your next document?*\n"
+            f"You have *{submissions} submission(s)* remaining.\n"
+            f"Tap below to open the app and upload!",
+            parse_mode="Markdown",
+            reply_markup=open_app_markup(),
+        )
+    else:
+        bot.send_message(
+            chat_id,
+            "✅ *All submissions used.*\n"
+            "Open the app to get more checks.",
+            parse_mode="Markdown",
+            reply_markup=open_app_markup(),
+        )
+
+
+def notify_report_sent(chat_id):
+    t = threading.Thread(target=send_followup, args=(chat_id,), daemon=True)
+    t.start()
+
+
+# ── /start ────────────────────────────────────────────────────────────────────
+
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
-    user = message.from_user
+    user      = message.from_user
     full_name = user.first_name + (" " + user.last_name if user.last_name else "")
-    existing = get_user(user.id)
-    existing_subs = existing.get("submissions", 0)
+    existing  = get_user(user.id)
+    existing_subs   = existing.get("submissions", 0)
     existing_status = existing.get("status", "pending_payment")
 
     if existing_subs > 0 and existing_status in ("approved", "report_sent"):
@@ -127,7 +89,7 @@ def cmd_start(message):
         })
         bot.send_message(
             message.chat.id,
-            f"👋 Welcome back, {user.first_name}!\n\n"
+            f"👋 Welcome back, *{user.first_name}!*\n\n"
             f"📂 You still have *{existing_subs} submission(s)* remaining.\n"
             f"Tap below to open the app and upload your document!",
             parse_mode="Markdown",
@@ -138,117 +100,37 @@ def cmd_start(message):
     set_user(user.id, {
         "username":    user.username or "",
         "full_name":   full_name,
-        "status":      "pending_payment",
-        "submissions": 0,
+        "status":      existing_status,
+        "submissions": existing_subs,
     })
+
     bot.send_message(
         message.chat.id,
-        f"👋 Welcome, {user.first_name}!\n\n"
-        + PAYMENT_INSTRUCTIONS + get_status_line(),
+        f"👋 Welcome, *{user.first_name}!*\n\n"
+        "I generate *AI & Plagiarism Reports* for your documents.\n\n"
+        "📱 Open the app below — pay, submit proof, and upload your document all in one place."
+        + get_status_line(),
         parse_mode="Markdown",
         reply_markup=open_app_markup(),
     )
 
 
-@bot.message_handler(content_types=["photo"])
-def handle_photo(message):
-    user    = message.from_user
-    profile = get_user(user.id)
+# ── All text / file messages → redirect to app ────────────────────────────────
+
+@bot.message_handler(func=lambda m: True, content_types=["text", "photo", "document"])
+def handle_any(message):
+    profile = get_user(message.from_user.id)
     status  = profile.get("status", "pending_payment")
 
-    if status in ("pending_payment", "pending_approval"):
-        photo_id   = message.photo[-1].file_id
-        file_info  = bot.get_file(photo_id)
-        downloaded = bot.download_file(file_info.file_path)
-        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-        markup.add(
-            telebot.types.InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user.id}"),
-            telebot.types.InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user.id}"),
-        )
-        admin_bot.send_photo(
-            ADMIN_CHAT_ID,
-            downloaded,
-            caption=(
-                f"🖼 *Payment Screenshot*\n\n"
-                f"👤 {profile.get('full_name', user.first_name)}  |  ID: `{user.id}`\n"
-                f"Ref Code: `{profile.get('ref_code', 'not sent yet')}`"
-            ),
-            parse_mode="Markdown",
-            reply_markup=markup,
-        )
-        set_user(user.id, {"status": "pending_approval"})
-        bot.send_message(
-            message.chat.id,
-            "🖼 *Payment screenshot received!*\n\n"
-            "Our team will verify your payment shortly and notify you here. ✅",
-            parse_mode="Markdown",
-        )
-    else:
-        bot.send_message(
-            message.chat.id,
-            "❌ Please send your document as a *file* (PDF or Word), not as a photo.",
-            parse_mode="Markdown",
-        )
-
-
-@bot.message_handler(func=lambda m: True, content_types=["text"])
-def handle_text(message):
-    user    = message.from_user
-    text    = message.text.strip()
-    profile = get_user(user.id)
-    status  = profile.get("status", "pending_payment")
-
-    if status in ("pending_payment", "pending_approval"):
-        ref = text.upper()
-        set_user(user.id, {"status": "pending_approval", "ref_code": ref})
-        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-        markup.add(
-            telebot.types.InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user.id}"),
-            telebot.types.InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user.id}"),
-        )
-        admin_bot.send_message(
-            ADMIN_CHAT_ID,
-            f"🔔 *New Ref Code Submitted*\n\n"
-            f"👤 Name: {profile.get('full_name', user.first_name)}\n"
-            f"🆔 User ID: `{user.id}`\n"
-            f"🔑 Ref Code: `{ref}`",
-            parse_mode="Markdown",
-            reply_markup=markup,
-        )
-        bot.send_message(
-            message.chat.id,
-            f"✅ Reference code *{ref}* received!\n\n"
-            "Our team will verify your payment shortly and notify you here. 📄",
-            parse_mode="Markdown",
-        )
-    elif status == "approved":
-        submissions = profile.get("submissions", 0)
-        bot.send_message(
-            message.chat.id,
-            f"📎 You're approved! Please *send your document as a file* (PDF or Word).\n"
-            f"📂 Submissions remaining: *{submissions}*",
-            parse_mode="Markdown",
-        )
-    elif status == "doc_received":
-        bot.send_message(message.chat.id, "⏳ Your document is being reviewed. Your report will be ready in 5–15 minutes!")
-    elif status == "report_sent":
-        submissions = profile.get("submissions", 0)
-        if submissions > 0:
-            bot.send_message(
-                message.chat.id,
-                f"📄 *Ready for your next document?*\n"
-                f"You have *{submissions} submission(s)* remaining — go ahead and upload your file!",
-                parse_mode="Markdown",
-            )
-        else:
-            bot.send_message(
-                message.chat.id,
-                "✅ *All submissions used.*\n"
-                "Use /start to submit a new document.",
-                parse_mode="Markdown",
-            )
-    else:
-        bot.send_message(message.chat.id, "Please complete payment and send your reference code to proceed.")
+    nudge_map = {
+        "pending_payment":  "👆 Open the app to pay and submit your reference code.",
+        "pending_approval": "⏳ Your payment is being verified. We'll notify you here shortly!",
+        "approved":         "📎 Open the app to upload your document.",
+        "doc_received":     "⏳ Your document is being reviewed — report ready in 5–15 minutes!",
+        "report_sent":      "✅ Your report was sent. Open the app to start a new check.",
+    }
+    msg = nudge_map.get(status, "Please use the app below to continue.")
+    bot.send_message(message.chat.id, msg, reply_markup=open_app_markup())
 
 
 def main():
@@ -258,52 +140,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# ── Web App Data handler (ref code submitted via Mini App) ────────────────────
-
-@bot.message_handler(content_types=["web_app_data"])
-def handle_webapp_data(message):
-    """
-    Receives data sent by tg.sendData() from the Mini App.
-    Currently handles: { "action": "submit_ref", "ref": "<code>" }
-    """
-    import json
-    user    = message.from_user
-    profile = get_user(user.id)
-    status  = profile.get("status", "pending_payment")
-
-    try:
-        payload = json.loads(message.web_app_data.data)
-    except Exception:
-        bot.send_message(message.chat.id, "❌ Could not read your submission. Please try again.")
-        return
-
-    if payload.get("action") == "submit_ref":
-        ref = payload.get("ref", "").strip().upper()
-        if not ref:
-            bot.send_message(message.chat.id, "❌ Empty reference code. Please try again.")
-            return
-
-        set_user(user.id, {"status": "pending_approval", "ref_code": ref})
-
-        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-        markup.add(
-            telebot.types.InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user.id}"),
-            telebot.types.InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user.id}"),
-        )
-        admin_bot.send_message(
-            ADMIN_CHAT_ID,
-            f"🔔 *New Ref Code (via App)*\n\n"
-            f"👤 Name: {profile.get('full_name', user.first_name)}\n"
-            f"🆔 User ID: `{user.id}`\n"
-            f"🔑 Ref Code: `{ref}`",
-            parse_mode="Markdown",
-            reply_markup=markup,
-        )
-        bot.send_message(
-            message.chat.id,
-            f"✅ Reference code *{ref}* received!\n\n"
-            "Our team will verify your payment shortly and notify you here. 📄",
-            parse_mode="Markdown",
-        )
