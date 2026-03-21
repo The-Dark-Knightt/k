@@ -244,17 +244,6 @@ class APIHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 return _json(self, 500, {"error": f"admin notify failed: {e}"})
 
-            # Confirm to user
-            try:
-                user_bot.send_message(
-                    uid,
-                    "🖼 *Payment screenshot received!*\n\n"
-                    "Our team will verify shortly and notify you here. ✅",
-                    parse_mode="Markdown",
-                )
-            except Exception:
-                pass
-
             return _json(self, 200, {"ok": True})
 
         # ── POST /api/upload_doc ──────────────────────────────────────────────
@@ -282,7 +271,8 @@ class APIHandler(BaseHTTPRequestHandler):
             uid     = int(user_id)
             profile = get_user(uid)
 
-            if profile.get("status") != "approved":
+            allowed_statuses = ("approved", "report_sent")
+            if profile.get("status") not in allowed_statuses:
                 return _json(self, 403, {"error": "not approved yet"})
 
             subs = profile.get("submissions", 0)
