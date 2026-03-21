@@ -10,167 +10,253 @@
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--tg-theme-bg-color, #fff);
-    color: var(--tg-theme-text-color, #111);
+    background: #f7f8fa;
+    color: #111;
     min-height: 100vh;
-    padding-bottom: 80px;
+    padding-bottom: 90px;
   }
 
+  /* ── Header ── */
   .header {
-    background: #2AABEE;
-    padding: 18px 20px 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    background: #1a8fe8;
+    padding: 16px 18px 13px;
+    display: flex; align-items: center; gap: 12px;
   }
   .header-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: rgba(255,255,255,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.22);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
   }
-  .header-title { color: #fff; font-size: 17px; font-weight: 600; }
-  .header-sub { color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 2px; }
+  .header-title { color: #fff; font-size: 16px; font-weight: 600; }
+  .header-sub   { color: rgba(255,255,255,0.88); font-size: 12px; margin-top: 2px; }
 
+  /* ── Nav ── */
   .nav {
-    display: flex;
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-    background: var(--tg-theme-bg-color, #fff);
-    position: sticky; top: 0; z-index: 10;
+    display: flex; border-bottom: 1px solid #e4e8ef;
+    background: #fff; position: sticky; top: 0; z-index: 10;
   }
   .nav-btn {
     flex: 1; padding: 13px 4px; text-align: center;
-    font-size: 13px; color: #888; cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    font-weight: 500;
+    font-size: 13px; color: #999; cursor: pointer;
+    border-bottom: 2px solid transparent; font-weight: 500;
+    transition: color 0.2s, border-color 0.2s;
   }
-  .nav-btn.active { color: #2AABEE; border-bottom-color: #2AABEE; }
+  .nav-btn.active  { color: #1a8fe8; border-bottom-color: #1a8fe8; }
+  .nav-btn.locked  { color: #ccc; cursor: default; }
 
-  .tab { display: none; padding: 18px 16px; flex-direction: column; gap: 14px; }
+  /* ── Tabs ── */
+  .tab { display: none; padding: 16px 15px; flex-direction: column; gap: 13px; }
   .tab.active { display: flex; }
 
-  .status-card {
-    border-radius: 14px; padding: 16px;
-    background: #f0f8ff;
-    border: 1px solid #c8e3f8;
+  /* ── Cards ── */
+  .card {
+    background: #fff; border-radius: 14px;
+    border: 1px solid #e8ecf2; padding: 14px 15px;
   }
-  .status-label { font-size: 11px; color: #5a8fc9; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; font-weight: 500; }
-  .status-val { font-size: 16px; font-weight: 600; color: #1a3a5c; display: flex; align-items: center; gap: 8px; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
-  .dot.pending { background: #f59e0b; }
-  .dot.waiting { background: #3b82f6; }
-  .dot.offline { background: #ef4444; }
 
+  /* ── Status card ── */
+  .status-label {
+    font-size: 10px; color: #1565c0; text-transform: uppercase;
+    letter-spacing: 0.7px; margin-bottom: 6px; font-weight: 600;
+  }
+  .status-val {
+    font-size: 15px; font-weight: 600; color: #0d2e5e;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    background: #22c55e;
+  }
+  .dot.amber  { background: #f59e0b; }
+  .dot.blue   { background: #3b82f6; }
+  .dot.red    { background: #ef4444; }
+
+  /* ── Subs row ── */
   .subs-row { display: flex; gap: 10px; }
   .sub-card {
-    flex: 1; border-radius: 12px; padding: 14px 12px;
-    text-align: center; border: 1px solid #eee;
-    background: var(--tg-theme-bg-color, #fff);
+    flex: 1; border-radius: 12px; padding: 13px 10px;
+    text-align: center; border: 1px solid #e8ecf2; background: #fff;
   }
-  .sub-num { font-size: 28px; font-weight: 600; color: #1a1a1a; }
-  .sub-lbl { font-size: 11px; color: #999; margin-top: 3px; }
+  .sub-num { font-size: 26px; font-weight: 700; color: #111; }
+  .sub-lbl { font-size: 11px; color: #888; margin-top: 3px; }
 
-  .section-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+  /* ── Section title ── */
+  .section-title {
+    font-size: 11px; font-weight: 600; color: #999;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
 
+  /* ── Steps ── */
   .steps { display: flex; flex-direction: column; }
-  .step { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .step {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 11px 0; border-bottom: 1px solid #f0f2f5;
+  }
   .step:last-child { border-bottom: none; }
   .step-circle {
     width: 26px; height: 26px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 600; flex-shrink: 0;
-    margin-top: 1px;
+    font-size: 12px; font-weight: 600; flex-shrink: 0; margin-top: 1px;
   }
-  .step-circle.done { background: #22c55e; color: #fff; }
-  .step-circle.active { background: #2AABEE; color: #fff; box-shadow: 0 0 0 4px #d0eeff; }
-  .step-circle.idle { background: #f0f0f0; color: #bbb; }
-  .step-text { font-size: 14px; color: #333; padding-top: 4px; line-height: 1.4; }
-  .step-text small { font-size: 12px; color: #999; display: block; margin-top: 2px; }
+  .step-circle.done   { background: #22c55e; color: #fff; }
+  .step-circle.active { background: #1a8fe8; color: #fff; box-shadow: 0 0 0 4px #d0eaff; }
+  .step-circle.idle   { background: #f0f0f0; color: #bbb; }
+  .step-label { font-size: 14px; color: #222; padding-top: 4px; line-height: 1.4; font-weight: 500; }
+  .step-sub   { font-size: 12px; color: #888; display: block; margin-top: 2px; font-weight: 400; }
 
+  /* ── Price badge ── */
   .price-badge {
-    background: #f0f8ff; border-radius: 12px;
-    padding: 14px 16px; border: 1px solid #c8e3f8;
+    background: #e8f3fd; border-radius: 12px;
+    padding: 13px 15px; border: 1px solid #b8d8f7;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .price-label { font-size: 13px; color: #5a8fc9; }
-  .price-val { font-size: 16px; font-weight: 600; color: #1a3a5c; }
+  .price-label { font-size: 13px; color: #1565c0; font-weight: 500; }
+  .price-val   { font-size: 16px; font-weight: 700; color: #0d2e5e; }
 
+  /* ── Payment items ── */
   .payment-item {
     display: flex; align-items: center; gap: 12px;
-    padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.06);
+    padding: 12px 0; border-bottom: 1px solid #f0f2f5;
   }
   .payment-item:last-child { border-bottom: none; }
   .pay-icon {
     width: 36px; height: 36px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
+    font-size: 17px; flex-shrink: 0;
   }
-  .pay-info { flex: 1; min-width: 0; }
-  .pay-name { font-size: 14px; font-weight: 500; color: #222; }
-  .pay-addr { font-size: 11px; color: #999; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pay-name { font-size: 14px; font-weight: 600; color: #111; }
+  .pay-addr {
+    font-size: 11px; color: #555; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+  }
   .copy-btn {
-    font-size: 12px; color: #2AABEE; font-weight: 500;
-    cursor: pointer; padding: 6px 10px; border-radius: 8px;
-    background: #f0f8ff; border: none; flex-shrink: 0;
+    font-size: 12px; color: #1a8fe8; font-weight: 600;
+    cursor: pointer; padding: 6px 12px; border-radius: 8px;
+    background: #e8f3fd; border: none; flex-shrink: 0;
     transition: background 0.15s;
   }
-  .copy-btn:active { background: #d0eeff; }
-  .copy-btn.copied { color: #22c55e; background: #f0fff4; }
+  .copy-btn:active { background: #c5dff7; }
+  .copy-btn.copied { color: #15803d; background: #dcfce7; }
 
-  .input-group { display: flex; flex-direction: column; gap: 6px; }
-  .input-label { font-size: 13px; font-weight: 500; color: #555; }
+  /* ── Inputs ── */
+  .input-label { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 5px; }
   .input-field {
     width: 100%; padding: 13px 14px; border-radius: 12px;
-    border: 1.5px solid #e0e0e0; font-size: 15px;
-    background: var(--tg-theme-bg-color, #fff);
-    color: var(--tg-theme-text-color, #111);
-    outline: none; transition: border-color 0.2s;
+    border: 1.5px solid #dce2ea; font-size: 15px;
+    background: #fff; color: #111; outline: none;
+    transition: border-color 0.2s;
   }
-  .input-field:focus { border-color: #2AABEE; }
+  .input-field:focus { border-color: #1a8fe8; }
 
+  /* ── Upload zone ── */
   .upload-zone {
-    border: 2px dashed #c0d8f0; border-radius: 16px;
-    padding: 32px 20px; text-align: center; background: #f5faff;
+    border: 2px dashed #b8d0ea; border-radius: 16px;
+    padding: 30px 18px; text-align: center; background: #f0f8ff;
+    cursor: pointer; transition: all 0.2s; position: relative;
+  }
+  .upload-zone:active, .upload-zone.dragover { background: #dbeeff; border-color: #1a8fe8; }
+  .upload-icon  { font-size: 38px; margin-bottom: 8px; }
+  .upload-title { font-size: 15px; font-weight: 600; color: #0d2e5e; }
+  .upload-sub   { font-size: 12px; color: #4a7ba8; margin-top: 5px; }
+  #file-input   { display: none; }
+
+  /* ── Screenshot upload zone ── */
+  .screenshot-zone {
+    border: 2px dashed #c8e0b8; border-radius: 16px;
+    padding: 22px 18px; text-align: center; background: #f4fcf0;
     cursor: pointer; transition: all 0.2s;
   }
-  .upload-zone:active { background: #e8f4ff; border-color: #2AABEE; }
-  .upload-icon { font-size: 40px; margin-bottom: 10px; }
-  .upload-title { font-size: 15px; font-weight: 600; color: #1a3a5c; }
-  .upload-sub { font-size: 13px; color: #7a9ab8; margin-top: 5px; }
+  .screenshot-zone:active { background: #e4f7dc; border-color: #4caf50; }
+  #screenshot-input { display: none; }
 
+  /* ── Progress bar ── */
+  .progress-wrap { background: #e8ecf2; border-radius: 99px; height: 6px; overflow: hidden; margin-top: 10px; }
+  .progress-bar  { height: 100%; background: #1a8fe8; border-radius: 99px; transition: width 0.3s; width: 0%; }
+  .progress-text { font-size: 11px; color: #4a7ba8; margin-top: 5px; text-align: center; }
+
+  /* ── Buttons ── */
   .main-btn {
     width: 100%; padding: 15px; border-radius: 13px;
-    border: none; font-size: 16px; font-weight: 600;
+    border: none; font-size: 15px; font-weight: 600;
     cursor: pointer; transition: all 0.15s;
   }
-  .main-btn.primary { background: #2AABEE; color: #fff; }
-  .main-btn.primary:active { background: #1a95d5; transform: scale(0.98); }
-  .main-btn.secondary { background: #f2f2f2; color: #444; }
-  .main-btn.secondary:active { background: #e5e5e5; transform: scale(0.98); }
-  .main-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary   { background: #1a8fe8; color: #fff; }
+  .btn-primary:active  { background: #1478cc; transform: scale(0.98); }
+  .btn-secondary { background: #eef2f7; color: #333; }
+  .btn-secondary:active { background: #dce4ef; transform: scale(0.98); }
+  .btn-success   { background: #22c55e; color: #fff; }
+  .btn-success:active { background: #16a34a; transform: scale(0.98); }
+  .main-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
 
-  .alert {
-    border-radius: 12px; padding: 13px 15px;
-    font-size: 13px; line-height: 1.5;
+  /* ── Alerts ── */
+  .alert { border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.55; }
+  .alert.info    { background: #e8f3fd; color: #0d3d7a; border: 1px solid #b8d8f7; }
+  .alert.success { background: #f0fdf4; color: #14532d; border: 1px solid #bbf7d0; }
+  .alert.warning { background: #fffbeb; color: #78350f; border: 1px solid #fde68a; }
+  .alert.error   { background: #fff1f2; color: #881337; border: 1px solid #fecdd3; }
+
+  /* ── Lock overlay ── */
+  .lock-overlay {
+    background: #f7f8fa; border-radius: 14px;
+    padding: 24px 16px; text-align: center;
+    border: 1.5px dashed #cdd5e0;
   }
-  .alert.info { background: #f0f8ff; color: #1a5a8c; border: 1px solid #c8e3f8; }
-  .alert.success { background: #f0fff4; color: #166534; border: 1px solid #bbf7d0; }
-  .alert.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .lock-icon { font-size: 28px; margin-bottom: 8px; }
+  .lock-text { font-size: 13px; color: #5a6a82; line-height: 1.5; }
 
+  /* ── Wait badge ── */
+  .wait-badge {
+    background: #fffbeb; border: 1px solid #fde68a;
+    border-radius: 10px; padding: 10px 13px;
+    font-size: 13px; color: #78350f;
+  }
+
+  /* ── Download button ── */
+  .download-card {
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    border-radius: 14px; padding: 16px 15px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .download-icon { font-size: 28px; flex-shrink: 0; }
+  .download-text { flex: 1; }
+  .download-title { font-size: 14px; font-weight: 600; color: #14532d; }
+  .download-sub   { font-size: 12px; color: #16a34a; margin-top: 2px; }
+  .download-btn {
+    background: #22c55e; color: #fff; border: none;
+    padding: 9px 14px; border-radius: 9px; font-size: 13px;
+    font-weight: 600; cursor: pointer; flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .download-btn:active { background: #16a34a; }
+
+  /* ── Reviews link ── */
   .reviews-link {
     display: flex; align-items: center; gap: 10px;
-    padding: 13px 15px; background: #fffbeb;
+    padding: 13px 14px; background: #fffbeb;
     border-radius: 12px; border: 1px solid #fde68a;
-    text-decoration: none; cursor: pointer;
+    cursor: pointer;
   }
-  .reviews-link span { font-size: 13px; color: #92400e; font-weight: 500; }
+  .reviews-link span { font-size: 13px; color: #78350f; font-weight: 500; }
 
-  .loader { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
-
+  /* ── Misc ── */
   .hidden { display: none !important; }
+  .loader { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+  .divider { height: 1px; background: #f0f2f5; margin: 4px 0; }
+  .file-preview {
+    background: #f0f8ff; border: 1px solid #b8d0ea;
+    border-radius: 10px; padding: 10px 13px;
+    font-size: 13px; color: #0d2e5e; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+  }
 
-  #screen-loading { padding: 40px 20px; text-align: center; color: #aaa; font-size: 14px; }
+  /* ── Spinner ── */
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: inline-block;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -184,49 +270,71 @@
 </div>
 
 <div class="nav">
-  <div class="nav-btn active" onclick="showTab('home', event)">Home</div>
-  <div class="nav-btn" onclick="showTab('pay', event)">Payment</div>
-  <div class="nav-btn" onclick="showTab('upload', event)">Upload</div>
+  <div class="nav-btn active" id="nav-home"   onclick="showTab('home')">Home</div>
+  <div class="nav-btn"        id="nav-pay"    onclick="showTab('pay')">Payment</div>
+  <div class="nav-btn"        id="nav-upload" onclick="showTab('upload')">Upload</div>
 </div>
 
-<!-- HOME TAB -->
+<!-- ══════════════════════ HOME TAB ══════════════════════ -->
 <div class="tab active" id="tab-home">
-  <div id="screen-loading">Loading your info...</div>
+  <div class="loader" id="screen-loading">Loading your info...</div>
 
-  <div id="home-content" class="hidden" style="display:none; flex-direction:column; gap:14px;">
-    <div class="status-card">
+  <div id="home-content" class="hidden">
+
+    <!-- Status -->
+    <div class="card">
       <div class="status-label">Your status</div>
-      <div class="status-val"><span class="dot" id="status-dot"></span><span id="status-text">—</span></div>
+      <div class="status-val">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">—</span>
+      </div>
     </div>
 
+    <!-- Submissions -->
     <div class="subs-row" id="subs-row">
       <div class="sub-card">
         <div class="sub-num" id="subs-left">—</div>
         <div class="sub-lbl">Submissions left</div>
       </div>
-      <div class="sub-card" style="background:#f0fff4; border-color:#bbf7d0;">
+      <div class="sub-card" style="background:#f0fdf4; border-color:#bbf7d0;">
         <div class="sub-num" id="subs-used" style="color:#15803d;">—</div>
-        <div class="sub-lbl" style="color:#86efac;">Used</div>
+        <div class="sub-lbl" style="color:#16a34a;">Used</div>
       </div>
     </div>
 
-    <div class="section-title">Progress</div>
-    <div class="steps" id="steps-list"></div>
+    <!-- Report ready download -->
+    <div id="report-download-card" class="download-card hidden">
+      <div class="download-icon">📋</div>
+      <div class="download-text">
+        <div class="download-title">Your report is ready!</div>
+        <div class="download-sub">Tap to download</div>
+      </div>
+      <button class="download-btn" onclick="downloadReport()">Download</button>
+    </div>
 
-    <div class="reviews-link" onclick="openLink('https://t.me/reviewstransactions')">
+    <!-- Progress steps -->
+    <div class="section-title">Progress</div>
+    <div class="card">
+      <div class="steps" id="steps-list"></div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="reviews-link" onclick="tg.openLink('https://t.me/reviewstransactions')">
       <span>⭐</span>
       <span>Reviews & previous transactions</span>
     </div>
 
     <div class="alert info">
-      🎁 Bring 2 clients and get 1 free check from support!<br>
+      🎁 Bring 2 clients and get 1 free check!<br>
       🛠 Support: <strong>@daemonizerr</strong>
     </div>
+
   </div>
 </div>
 
-<!-- PAYMENT TAB -->
+<!-- ══════════════════════ PAYMENT TAB ══════════════════════ -->
 <div class="tab" id="tab-pay">
+
   <div class="price-badge">
     <div class="price-label">Price per check</div>
     <div class="price-val">$1 · 1 USDT · 130 Kshs</div>
@@ -234,28 +342,26 @@
 
   <div class="section-title">Payment options</div>
 
-  <div>
+  <div class="card">
     <div class="payment-item">
       <div class="pay-icon" style="background:#e8f5e9;">📱</div>
-      <div class="pay-info">
+      <div style="flex:1; min-width:0;">
         <div class="pay-name">M-Pesa</div>
         <div class="pay-addr">0799023325</div>
       </div>
       <button class="copy-btn" onclick="copyText('0799023325', this)">Copy</button>
     </div>
-
     <div class="payment-item">
       <div class="pay-icon" style="background:#fff3e0;">🔶</div>
-      <div class="pay-info">
+      <div style="flex:1; min-width:0;">
         <div class="pay-name">USDC (Solana)</div>
         <div class="pay-addr">BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1</div>
       </div>
       <button class="copy-btn" onclick="copyText('BNoFmzZxuR1DWPsG8yUfQppEJ95guwGCCzZBKfeMiUP1', this)">Copy</button>
     </div>
-
     <div class="payment-item">
       <div class="pay-icon" style="background:#e8eaf6;">💎</div>
-      <div class="pay-info">
+      <div style="flex:1; min-width:0;">
         <div class="pay-name">USDT (TRC20)</div>
         <div class="pay-addr">TYf8HUV4tXtvhSviLKzKyeZQqGHoMg889E</div>
       </div>
@@ -263,40 +369,126 @@
     </div>
   </div>
 
-  <div class="alert info">After paying, go to the <strong>Home</strong> tab and submit your reference code or screenshot.</div>
-
-  <div id="pay-ref-section">
-    <div class="section-title">Submit payment proof</div>
-    <div class="input-group">
-      <label class="input-label">Reference code (or send a screenshot below)</label>
-      <input type="text" class="input-field" id="ref-input" placeholder="e.g. QHG2BCXYZ8">
-    </div>
-    <button class="main-btn primary" onclick="submitRef()">Submit reference code</button>
-    <button class="main-btn secondary" onclick="sendScreenshot()">Send payment screenshot</button>
+  <!-- Already approved notice -->
+  <div id="pay-approved-notice" class="alert success hidden">
+    ✅ Your payment is verified! Head to the <strong>Upload</strong> tab to submit your document.
   </div>
+
+  <!-- Ref code + screenshot submission -->
+  <div id="pay-submit-section">
+    <div class="section-title">Submit payment proof</div>
+
+    <!-- Ref code -->
+    <div class="card">
+      <div class="input-label">M-Pesa / Transaction reference code</div>
+      <div style="margin-top:6px;">
+        <input type="text" class="input-field" id="ref-input" placeholder="e.g. QHG2BCXYZ8" autocapitalize="characters">
+      </div>
+      <div style="margin-top:10px;">
+        <button class="main-btn btn-primary" id="ref-btn" onclick="submitRef()">Submit reference code</button>
+      </div>
+    </div>
+
+    <div class="section-title" style="text-align:center; margin: 4px 0;">— or —</div>
+
+    <!-- Screenshot upload -->
+    <div class="card">
+      <div class="input-label">Upload payment screenshot</div>
+      <div style="margin-top:8px;">
+        <div class="screenshot-zone" onclick="document.getElementById('screenshot-input').click()">
+          <div style="font-size:28px; margin-bottom:6px;">🖼</div>
+          <div style="font-size:14px; font-weight:600; color:#0d2e5e;" id="screenshot-label">Tap to choose a screenshot</div>
+          <div style="font-size:12px; color:#4a7ba8; margin-top:4px;">JPG or PNG</div>
+        </div>
+        <input type="file" id="screenshot-input" accept="image/*" onchange="onScreenshotPicked(event)">
+      </div>
+      <div id="screenshot-preview" class="hidden" style="margin-top:10px;">
+        <div class="file-preview" id="screenshot-filename">📷 screenshot.jpg</div>
+        <div class="progress-wrap hidden" id="ss-progress-wrap">
+          <div class="progress-bar" id="ss-progress-bar"></div>
+        </div>
+        <div class="progress-text hidden" id="ss-progress-text"></div>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="main-btn btn-secondary" id="screenshot-btn" onclick="submitScreenshot()" disabled>Send screenshot</button>
+      </div>
+    </div>
+
+    <div class="alert info">After submitting, our team will verify and approve you shortly. ✅</div>
+  </div>
+
 </div>
 
-<!-- UPLOAD TAB -->
+<!-- ══════════════════════ UPLOAD TAB ══════════════════════ -->
 <div class="tab" id="tab-upload">
-  <div class="status-card" id="upload-status-card">
-    <div class="status-label">Submissions remaining</div>
-    <div class="status-val" id="upload-subs-text">—</div>
+
+  <!-- Locked state -->
+  <div id="upload-locked" class="hidden">
+    <div class="lock-overlay">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-text" id="upload-locked-msg">Complete payment first.</div>
+    </div>
+    <div class="card" style="margin-top:4px;">
+      <div class="steps">
+        <div class="step">
+          <div class="step-circle active">1</div>
+          <div>
+            <div class="step-label">Pay & submit proof</div>
+            <span class="step-sub">Use the Payment tab</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-circle idle">2</div>
+          <div><div class="step-label" style="color:#bbb;">Wait for approval</div></div>
+        </div>
+        <div class="step">
+          <div class="step-circle idle">3</div>
+          <div><div class="step-label" style="color:#bbb;">Upload document</div></div>
+        </div>
+        <div class="step">
+          <div class="step-circle idle">4</div>
+          <div><div class="step-label" style="color:#bbb;">Receive report</div></div>
+        </div>
+      </div>
+    </div>
+    <button class="main-btn btn-primary" onclick="showTab('pay')">Go to Payment</button>
   </div>
 
-  <div id="upload-allowed">
-    <div class="upload-zone" onclick="sendDocument()">
-      <div class="upload-icon">📄</div>
-      <div class="upload-title">Upload your document</div>
-      <div class="upload-sub">Tap to send a PDF or Word file via chat</div>
-    </div>
-    <div class="alert info" style="margin-top: 14px;">
-      Your report will be ready in <strong>5–15 minutes</strong> after upload.
+  <!-- Doc in review -->
+  <div id="upload-reviewing" class="hidden">
+    <div class="alert warning" style="font-size:14px;">
+      ⏳ <strong>Your document is being reviewed.</strong><br>
+      Your report will be ready in 5–15 minutes. We'll notify you in chat when it's done!
     </div>
   </div>
 
-  <div id="upload-blocked" class="hidden">
-    <div class="alert warning" id="upload-blocked-msg">—</div>
+  <!-- Upload form (approved users) -->
+  <div id="upload-allowed" class="hidden">
+    <div class="card">
+      <div class="status-label">Submissions remaining</div>
+      <div class="status-val" id="upload-subs-text" style="font-size:22px; color:#111;">—</div>
+    </div>
+
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">📎</div>
+      <div class="upload-title" id="upload-title">Tap to choose your document</div>
+      <div class="upload-sub">PDF or Word (.docx)</div>
+      <input type="file" id="file-input" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onchange="onFilePicked(event)">
+    </div>
+
+    <div id="file-preview-wrap" class="hidden">
+      <div class="file-preview" id="file-preview-name">📄 document.pdf</div>
+      <div class="progress-wrap" id="upload-progress-wrap" style="display:none;">
+        <div class="progress-bar" id="upload-progress-bar"></div>
+      </div>
+      <div class="progress-text" id="upload-progress-text"></div>
+    </div>
+
+    <div class="wait-badge">⏳ Reports are usually ready in 5–15 minutes after upload</div>
+
+    <button class="main-btn btn-primary" id="upload-btn" onclick="uploadDoc()" disabled>Upload document</button>
   </div>
+
 </div>
 
 <script>
@@ -304,141 +496,412 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-const BOT_USERNAME = 'daemonizerr'; // ← update to your actual bot username if different
+// ── Config ────────────────────────────────────────────────────────────────────
+const API_BASE = 'https://k-production-d882.up.railway.app';
 
 const STEPS = [
-  { key: 'paid',     label: 'Payment verified',       sub: '' },
-  { key: 'uploaded', label: 'Document received',       sub: '' },
-  { key: 'working',  label: 'Report being prepared',   sub: '5–15 minutes' },
-  { key: 'done',     label: 'Report delivered',        sub: '' },
+  { label: 'Payment verified',     sub: '' },
+  { label: 'Document received',    sub: '' },
+  { label: 'Report being prepared',sub: '5–15 minutes' },
+  { label: 'Report delivered',     sub: '' },
 ];
 
 const STATUS_MAP = {
-  pending_payment:  { text: 'Awaiting payment',       dot: 'pending',  step: -1 },
-  pending_approval: { text: 'Verifying payment...',   dot: 'waiting',  step: -1 },
-  approved:         { text: 'Approved — ready to upload', dot: '',    step: 0  },
-  doc_received:     { text: 'Report being prepared',  dot: 'waiting',  step: 2  },
-  report_sent:      { text: 'Report delivered',       dot: '',         step: 3  },
+  pending_payment:  { text: 'Awaiting payment',        dot: 'amber', step: -1 },
+  pending_approval: { text: 'Verifying payment...',    dot: 'blue',  step: -1 },
+  approved:         { text: 'Approved — ready to upload', dot: '',   step: 0  },
+  doc_received:     { text: 'Report being prepared',   dot: 'blue',  step: 2  },
+  report_sent:      { text: 'Report delivered ✅',     dot: '',      step: 3  },
 };
 
-let userData = null;
+let userData   = null;
+let pickedFile = null;
+let pickedScreenshot = null;
+let refreshTimer = null;
+const REFRESH_INTERVAL = 30000; // 30 seconds
 
+// ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
-  const user = tg.initDataUnsafe?.user;
-  if (!user) {
-    document.getElementById('screen-loading').textContent = 'Could not load user info. Please reopen the app.';
+  const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+
+  if (!user || !user.id) {
+    // Fallback: try to get id from URL param (for testing)
+    const urlParams = new URLSearchParams(window.location.search);
+    const testId = urlParams.get('user_id');
+    if (testId) {
+      fetchUser({ id: parseInt(testId), first_name: 'User' });
+    } else {
+      document.getElementById('screen-loading').textContent =
+        'Could not load user info. Please close and reopen the app.';
+    }
     return;
   }
 
   document.getElementById('header-sub').textContent = `Hi, ${user.first_name}!`;
+  fetchUser(user);
+}
 
-  fetch(`https://k-production-d882.up.railway.app/api/user?id=${user.id}`)
+function fetchUser(user) {
+  fetch(`${API_BASE}/api/user?id=${user.id}`)
     .then(r => r.json())
     .then(data => {
-      userData = data;
-      renderHome(data);
-      renderUpload(data);
-      document.getElementById('screen-loading').style.display = 'none';
-      const hc = document.getElementById('home-content');
-      hc.classList.remove('hidden');
-      hc.style.display = 'flex';
+      userData = Object.keys(data).length === 0
+        ? { status: 'pending_payment', submissions: 0 }
+        : data;
+
+      renderAll(userData, user);
+
+      document.getElementById('screen-loading').classList.add('hidden');
+      document.getElementById('home-content').classList.remove('hidden');
+
+      // Auto-refresh every 30s
+      clearInterval(refreshTimer);
+      refreshTimer = setInterval(() => {
+        fetch(`${API_BASE}/api/user?id=${user.id}`)
+          .then(r => r.json())
+          .then(fresh => {
+            userData = Object.keys(fresh).length === 0
+              ? { status: 'pending_payment', submissions: 0 }
+              : fresh;
+            renderAll(userData, user);
+          })
+          .catch(() => {});
+      }, REFRESH_INTERVAL);
     })
     .catch(() => {
-      document.getElementById('screen-loading').textContent = 'Could not connect. Please try again.';
+      document.getElementById('screen-loading').textContent =
+        'Could not connect. Please check your connection and try again.';
     });
 }
 
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderAll(data, user) {
+  renderHome(data);
+  renderPayTab(data);
+  renderUploadTab(data);
+  updateNavLocks(data);
+}
+
 function renderHome(data) {
-  const s = data.status || 'pending_payment';
+  const s    = data.status || 'pending_payment';
   const info = STATUS_MAP[s] || STATUS_MAP.pending_payment;
   const subs = data.submissions || 0;
-  const totalAllocated = data.total_allocated || 0;
-  const used = Math.max(0, totalAllocated - subs);
+  const used = Math.max(0, (data.total_allocated || 0) - subs);
 
   document.getElementById('status-text').textContent = info.text;
   const dot = document.getElementById('status-dot');
-  dot.className = 'dot ' + (info.dot || '');
-  if (!info.dot) dot.style.background = '#22c55e';
+  dot.className = 'dot' + (info.dot ? ' ' + info.dot : '');
 
   document.getElementById('subs-left').textContent = subs;
-  document.getElementById('subs-used').textContent = Math.max(0, used);
+  document.getElementById('subs-used').textContent = used;
 
+  // Report download card
+  const dlCard = document.getElementById('report-download-card');
+  if (s === 'report_sent') {
+    dlCard.classList.remove('hidden');
+  } else {
+    dlCard.classList.add('hidden');
+  }
+
+  // Steps
   const stepsDone = info.step;
-  const stepsHtml = STEPS.map((step, i) => {
-    let cls = 'idle', label = i + 1;
-    if (i < stepsDone) { cls = 'done'; label = '✓'; }
-    else if (i === stepsDone) { cls = 'active'; }
+  document.getElementById('steps-list').innerHTML = STEPS.map((step, i) => {
+    let cls = 'idle', lbl = i + 1;
+    if (i < stepsDone)      { cls = 'done';   lbl = '✓'; }
+    else if (i === stepsDone){ cls = 'active'; }
+    const sub = (step.sub && i === stepsDone)
+      ? `<span class="step-sub">Usually ${step.sub}</span>` : '';
     return `<div class="step">
-      <div class="step-circle ${cls}">${label}</div>
-      <div class="step-text">${step.label}${step.sub && i === stepsDone ? `<small>${step.sub}</small>` : ''}</div>
+      <div class="step-circle ${cls}">${lbl}</div>
+      <div><div class="step-label" style="${cls==='idle'?'color:#bbb;':''}">${step.label}</div>${sub}</div>
     </div>`;
   }).join('');
-  document.getElementById('steps-list').innerHTML = stepsHtml;
 }
 
-function renderUpload(data) {
+function renderPayTab(data) {
   const s = data.status || 'pending_payment';
-  const subs = data.submissions || 0;
-  const card = document.getElementById('upload-subs-text');
-  const allowed = document.getElementById('upload-allowed');
-  const blocked = document.getElementById('upload-blocked');
-  const blockedMsg = document.getElementById('upload-blocked-msg');
+  const approvedNotice = document.getElementById('pay-approved-notice');
+  const submitSection  = document.getElementById('pay-submit-section');
 
-  card.textContent = subs > 0 ? `${subs} check${subs !== 1 ? 's' : ''} available` : 'No submissions remaining';
-
-  const canUpload = (s === 'approved') || (s === 'report_sent' && subs > 0);
-
-  if (canUpload) {
-    allowed.classList.remove('hidden');
-    blocked.classList.add('hidden');
+  if (s === 'approved' || s === 'doc_received' || s === 'report_sent') {
+    approvedNotice.classList.remove('hidden');
+    submitSection.classList.add('hidden');
   } else {
-    allowed.classList.add('hidden');
-    blocked.classList.remove('hidden');
-    const msgs = {
-      pending_payment:  '❌ Please complete payment first, then submit proof on the Payment tab.',
-      pending_approval: '⏳ Your payment is being verified. Please hold on.',
-      doc_received:     '⏳ Your document is already being reviewed. Your report will be ready in 5–15 minutes!',
-      report_sent:      '✅ All submissions used. Go to Payment to get more checks.',
-    };
-    blockedMsg.textContent = msgs[s] || '❌ Not authorised yet.';
+    approvedNotice.classList.add('hidden');
+    submitSection.classList.remove('hidden');
   }
 }
 
-function showTab(name, e) {
-  const clickedBtn = e ? e.currentTarget : document.querySelector(`.nav-btn[onclick*="${name}"]`);
+function renderUploadTab(data) {
+  const s    = data.status || 'pending_payment';
+  const subs = data.submissions || 0;
+
+  const locked     = document.getElementById('upload-locked');
+  const reviewing  = document.getElementById('upload-reviewing');
+  const allowed    = document.getElementById('upload-allowed');
+
+  locked.classList.add('hidden');
+  reviewing.classList.add('hidden');
+  allowed.classList.add('hidden');
+
+  if (s === 'approved' && subs > 0) {
+    allowed.classList.remove('hidden');
+    document.getElementById('upload-subs-text').textContent =
+      `${subs} check${subs !== 1 ? 's' : ''} available`;
+  } else if (s === 'doc_received') {
+    reviewing.classList.remove('hidden');
+  } else if (s === 'report_sent' && subs > 0) {
+    allowed.classList.remove('hidden');
+    document.getElementById('upload-subs-text').textContent =
+      `${subs} check${subs !== 1 ? 's' : ''} available`;
+  } else {
+    locked.classList.remove('hidden');
+    const msgs = {
+      pending_payment:  '❌ Please complete payment first, then submit proof on the Payment tab.',
+      pending_approval: '⏳ Your payment is being verified. We\'ll notify you here shortly!',
+      report_sent:      '✅ All submissions used. Go to Payment to purchase more checks.',
+    };
+    document.getElementById('upload-locked-msg').textContent =
+      msgs[s] || 'Complete payment to unlock uploads.';
+  }
+}
+
+function updateNavLocks(data) {
+  const s = data.status || 'pending_payment';
+  const uploadNav = document.getElementById('nav-upload');
+  const canUpload = s === 'approved' || (s === 'report_sent' && (data.submissions || 0) > 0);
+
+  if (canUpload || s === 'doc_received') {
+    uploadNav.classList.remove('locked');
+  } else {
+    uploadNav.classList.add('locked');
+  }
+}
+
+// ── Tab navigation ────────────────────────────────────────────────────────────
+function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  if (clickedBtn) clickedBtn.classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
 }
 
+// ── Copy ──────────────────────────────────────────────────────────────────────
 function copyText(text, btn) {
   navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = 'Copied!';
+    const orig = btn.textContent;
+    btn.textContent = 'Copied! ✓';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    tg.showAlert('Could not copy. Please copy manually:\n' + text);
   });
 }
 
+// ── Submit ref code ───────────────────────────────────────────────────────────
 function submitRef() {
-  const val = document.getElementById('ref-input').value.trim();
-  if (!val) { tg.showAlert('Please enter your reference code.'); return; }
-  tg.sendData(JSON.stringify({ action: 'submit_ref', ref: val }));
-  tg.showAlert('Reference code submitted! We will verify and notify you shortly.');
+  const ref = document.getElementById('ref-input').value.trim();
+  if (!ref) { tg.showAlert('Please enter your reference code.'); return; }
+
+  const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (!user) { tg.showAlert('Could not read user info. Please reopen the app.'); return; }
+
+  const btn = document.getElementById('ref-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Submitting...';
+
+  fetch(`${API_BASE}/api/submit_ref`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id:    user.id,
+      first_name: user.first_name,
+      full_name:  (user.first_name + (user.last_name ? ' ' + user.last_name : '')).trim(),
+      username:   user.username || '',
+      ref:        ref,
+    }),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        tg.showAlert('✅ Reference code submitted! We\'ll verify and notify you shortly.');
+        document.getElementById('ref-input').value = '';
+        btn.innerHTML = '✓ Submitted';
+        btn.style.background = '#22c55e';
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    })
+    .catch(err => {
+      tg.showAlert('❌ Submission failed: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = 'Submit reference code';
+    });
 }
 
-function sendScreenshot() {
-  tg.showAlert('Please send your payment screenshot directly in the chat.');
-  setTimeout(() => tg.close(), 500);
+// ── Screenshot pick & submit ──────────────────────────────────────────────────
+function onScreenshotPicked(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  pickedScreenshot = file;
+
+  document.getElementById('screenshot-label').textContent = file.name;
+  document.getElementById('screenshot-filename').textContent = '📷 ' + file.name;
+  document.getElementById('screenshot-preview').classList.remove('hidden');
+  document.getElementById('screenshot-btn').disabled = false;
 }
 
-function sendDocument() {
-  tg.showAlert('Please send your document (PDF or Word) directly in the chat.');
-  setTimeout(() => tg.close(), 500);
+function submitScreenshot() {
+  if (!pickedScreenshot) { tg.showAlert('Please choose a screenshot first.'); return; }
+
+  const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (!user) { tg.showAlert('Could not read user info. Please reopen the app.'); return; }
+
+  const btn = document.getElementById('screenshot-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Uploading...';
+
+  const progressWrap = document.getElementById('ss-progress-wrap');
+  const progressBar  = document.getElementById('ss-progress-bar');
+  const progressText = document.getElementById('ss-progress-text');
+  progressWrap.classList.remove('hidden');
+  progressText.classList.remove('hidden');
+
+  const formData = new FormData();
+  formData.append('user_id',    user.id);
+  formData.append('first_name', user.first_name);
+  formData.append('full_name',  (user.first_name + (user.last_name ? ' ' + user.last_name : '')).trim());
+  formData.append('username',   user.username || '');
+  formData.append('screenshot', pickedScreenshot, pickedScreenshot.name);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${API_BASE}/api/submit_screenshot`);
+
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      progressBar.style.width = pct + '%';
+      progressText.textContent = `Uploading… ${pct}%`;
+    }
+  };
+
+  xhr.onload = () => {
+    try {
+      const data = JSON.parse(xhr.responseText);
+      if (data.ok) {
+        progressBar.style.width = '100%';
+        progressText.textContent = 'Sent!';
+        tg.showAlert('✅ Screenshot submitted! We\'ll verify and notify you shortly.');
+        btn.innerHTML = '✓ Sent';
+        btn.style.background = '#22c55e';
+        pickedScreenshot = null;
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch(e) {
+      tg.showAlert('❌ Upload failed: ' + e.message);
+      btn.disabled = false;
+      btn.innerHTML = 'Send screenshot';
+    }
+  };
+
+  xhr.onerror = () => {
+    tg.showAlert('❌ Upload failed. Please check your connection.');
+    btn.disabled = false;
+    btn.innerHTML = 'Send screenshot';
+  };
+
+  xhr.send(formData);
 }
 
-function openLink(url) {
-  tg.openLink(url);
+// ── Document pick ─────────────────────────────────────────────────────────────
+function onFilePicked(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  pickedFile = file;
+
+  document.getElementById('upload-title').textContent = file.name;
+  document.getElementById('file-preview-name').textContent = '📄 ' + file.name;
+  document.getElementById('file-preview-wrap').classList.remove('hidden');
+  document.getElementById('upload-btn').disabled = false;
+}
+
+// ── Upload document ───────────────────────────────────────────────────────────
+function uploadDoc() {
+  if (!pickedFile) { tg.showAlert('Please choose a file first.'); return; }
+
+  const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (!user) { tg.showAlert('Could not read user info. Please reopen the app.'); return; }
+
+  const btn          = document.getElementById('upload-btn');
+  const progressWrap = document.getElementById('upload-progress-wrap');
+  const progressBar  = document.getElementById('upload-progress-bar');
+  const progressText = document.getElementById('upload-progress-text');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Uploading...';
+  progressWrap.style.display = 'block';
+
+  const formData = new FormData();
+  formData.append('user_id',    user.id);
+  formData.append('first_name', user.first_name);
+  formData.append('full_name',  (user.first_name + (user.last_name ? ' ' + user.last_name : '')).trim());
+  formData.append('username',   user.username || '');
+  formData.append('file',       pickedFile, pickedFile.name);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${API_BASE}/api/upload_doc`);
+
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      progressBar.style.width = pct + '%';
+      progressText.textContent = `Uploading… ${pct}%`;
+    }
+  };
+
+  xhr.onload = () => {
+    try {
+      const data = JSON.parse(xhr.responseText);
+      if (data.ok) {
+        progressBar.style.width = '100%';
+        progressText.textContent = 'Uploaded! ✓';
+        btn.innerHTML = '✓ Uploaded!';
+        btn.style.background = '#22c55e';
+        tg.showAlert('📄 Document received! Your report will be ready in 5–15 minutes. We\'ll notify you here when it\'s done.');
+        pickedFile = null;
+        // Refresh data after short delay
+        setTimeout(() => {
+          const u = tg.initDataUnsafe && tg.initDataUnsafe.user;
+          if (u) fetchUser(u);
+        }, 1500);
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch(e) {
+      tg.showAlert('❌ Upload failed: ' + e.message);
+      btn.disabled = false;
+      btn.innerHTML = 'Upload document';
+    }
+  };
+
+  xhr.onerror = () => {
+    tg.showAlert('❌ Upload failed. Please check your connection.');
+    btn.disabled = false;
+    btn.innerHTML = 'Upload document';
+  };
+
+  xhr.send(formData);
+}
+
+// ── Download report ───────────────────────────────────────────────────────────
+function downloadReport() {
+  const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (!user) return;
+  tg.openLink(`${API_BASE}/api/download/${user.id}`);
 }
 
 init();
