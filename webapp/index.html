@@ -365,6 +365,11 @@
     </div>
   </div>
 
+  <!-- Purchase more notice (submissions used up) -->
+  <div id="pay-purchase-notice" class="alert warning hidden">
+    ✅ All submissions used. Purchase more checks below to continue.
+  </div>
+
   <!-- Already approved notice -->
   <div id="pay-approved-notice" class="alert success hidden">
     ✅ Your payment is verified! Head to the <strong>Upload</strong> tab to submit your document.
@@ -639,15 +644,31 @@ function renderHome(data) {
 }
 
 function renderPayTab(data) {
-  const s = data.status || 'pending_payment';
-  const approvedNotice = document.getElementById('pay-approved-notice');
-  const submitSection  = document.getElementById('pay-submit-section');
+  const s    = data.status || 'pending_payment';
+  const subs = data.submissions || 0;
 
-  if (s === 'approved' || s === 'doc_received' || s === 'report_sent') {
+  const approvedNotice  = document.getElementById('pay-approved-notice');
+  const purchaseNotice  = document.getElementById('pay-purchase-notice');
+  const submitSection   = document.getElementById('pay-submit-section');
+
+  // Reset all
+  approvedNotice.classList.add('hidden');
+  purchaseNotice.classList.add('hidden');
+  submitSection.classList.add('hidden');
+
+  if ((s === 'approved' || s === 'doc_received') && subs > 0) {
+    // Paid and has submissions — show green notice, hide payment form
     approvedNotice.classList.remove('hidden');
-    submitSection.classList.add('hidden');
+  } else if (s === 'report_sent' && subs === 0) {
+    // Used up all submissions — show purchase notice + payment form
+    purchaseNotice.classList.remove('hidden');
+    submitSection.classList.remove('hidden');
+  } else if (s === 'pending_approval') {
+    // Waiting for approval — show waiting message, hide form
+    approvedNotice.classList.remove('hidden');
+    approvedNotice.innerHTML = '⏳ Payment proof received — we\'ll verify and notify you shortly.';
   } else {
-    approvedNotice.classList.add('hidden');
+    // pending_payment or anything else — show payment form
     submitSection.classList.remove('hidden');
   }
 }
