@@ -302,14 +302,10 @@
       </div>
     </div>
 
-    <!-- Report ready download -->
-    <div id="report-download-card" class="download-card hidden">
-      <div class="download-icon">📋</div>
-      <div class="download-text">
-        <div class="download-title">Your report is ready!</div>
-        <div class="download-sub">Tap to download</div>
-      </div>
-      <button class="download-btn" onclick="downloadReport()">Download</button>
+    <!-- Report ready download cards -->
+    <div id="reports-section" class="hidden">
+      <div class="section-title">Your reports</div>
+      <div id="reports-list" style="display:flex; flex-direction:column; gap:10px;"></div>
     </div>
 
     <!-- Progress steps -->
@@ -595,19 +591,43 @@ function renderHome(data) {
   document.getElementById('subs-left').textContent = subs;
   document.getElementById('subs-used').textContent = used;
 
-  // Report download card
-  const dlCard = document.getElementById('report-download-card');
+  // Reports section — fetch file list from API
+  const reportsSection = document.getElementById('reports-section');
+  const reportsList    = document.getElementById('reports-list');
+
   if (s === 'report_sent') {
-    dlCard.classList.remove('hidden');
+    const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (user) {
+      fetch(`${API_BASE}/api/reports/${user.id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.count > 0) {
+            reportsSection.classList.remove('hidden');
+            reportsList.innerHTML = data.reports.map((r, i) => `
+              <div class="download-card">
+                <div class="download-icon">📄</div>
+                <div class="download-text">
+                  <div class="download-title">${r.filename}</div>
+                  <div class="download-sub">Report ${i + 1} of ${data.count}</div>
+                </div>
+                <button class="download-btn" onclick="downloadReport(${r.index})">Download</button>
+              </div>
+            `).join('');
+          } else {
+            reportsSection.classList.add('hidden');
+          }
+        })
+        .catch(() => reportsSection.classList.add('hidden'));
+    }
   } else {
-    dlCard.classList.add('hidden');
+    reportsSection.classList.add('hidden');
   }
 
   // Steps
   const stepsDone = info.step;
   document.getElementById('steps-list').innerHTML = STEPS.map((step, i) => {
     let cls = 'idle', lbl = i + 1;
-    if (i < stepsDone)      { cls = 'done';   lbl = '✓'; }
+    if (i < stepsDone)       { cls = 'done';   lbl = '✓'; }
     else if (i === stepsDone){ cls = 'active'; }
     const sub = (step.sub && i === stepsDone)
       ? `<span class="step-sub">Usually ${step.sub}</span>` : '';
@@ -898,10 +918,10 @@ function uploadDoc() {
 }
 
 // ── Download report ───────────────────────────────────────────────────────────
-function downloadReport() {
+function downloadReport(index) {
   const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
   if (!user) return;
-  tg.openLink(`${API_BASE}/api/download/${user.id}`);
+  tg.openLink(`${API_BASE}/api/download/${user.id}/${index}`);
 }
 
 init();
