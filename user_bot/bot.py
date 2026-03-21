@@ -66,8 +66,9 @@ def cmd_start(message):
             f"📂 You still have *{existing_subs} submission(s)* remaining.\n"
             f"Tap below to open the app and upload your document!",
             parse_mode="Markdown",
-            reply_markup=open_app_markup(),
+            reply_markup=telebot.types.ReplyKeyboardRemove(),
         )
+        bot.send_message(message.chat.id, "👇", reply_markup=open_app_markup())
         return
 
     set_user(user.id, {
@@ -84,8 +85,9 @@ def cmd_start(message):
         "📱 Open the app below — pay, submit proof, and upload your document all in one place."
         + get_status_line(),
         parse_mode="Markdown",
-        reply_markup=open_app_markup(),
+        reply_markup=telebot.types.ReplyKeyboardRemove(),
     )
+    bot.send_message(message.chat.id, "👇", reply_markup=open_app_markup())
 
 
 # ── All text / file messages → redirect to app ────────────────────────────────
@@ -102,13 +104,13 @@ def handle_any(message):
         "doc_received":     "⏳ Document under review — report ready in 5–15 min.",
         "report_sent":      "✅ Report sent. Open the app for a new check.",
     }
-    # Delete the user's message to keep the chat clean
-    try:
-        bot.delete_message(message.chat.id, message.message_id)
-    except Exception:
-        pass
     msg = nudge_map.get(status, "Please use the app below to continue.")
-    bot.send_message(message.chat.id, msg, reply_markup=open_app_markup())
+    # Remove keyboard so user's only obvious action is the Open App button
+    bot.send_message(
+        message.chat.id, msg,
+        reply_markup=telebot.types.ReplyKeyboardRemove()
+    )
+    bot.send_message(message.chat.id, "👇", reply_markup=open_app_markup())
 
 
 def main():
