@@ -300,10 +300,7 @@ class APIHandler(BaseHTTPRequestHandler):
             try:
                 user_bot.send_message(
                     uid,
-                    "📄 *Document received!*\n\n"
-                    "Your report will be ready in *5–15 minutes*. "
-                    "We'll notify you here when it's done. ✅",
-                    parse_mode="Markdown",
+                    "📄 Document received — report ready in 5–15 min.",
                 )
             except Exception:
                 pass
