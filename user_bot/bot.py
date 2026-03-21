@@ -66,7 +66,7 @@ def cmd_start(message):
 
     bot.send_message(
         message.chat.id,
-        f"👋 Hi {user.first_name}! Open the app below — $1 per check, results in 5–15 min. {online}",
+        f"👋 Hi {user.first_name}! Open the app below — $1.5 per check (140 Kshs), results in 5–15 min. {online}",
         reply_markup=open_app_markup(),
     )
 
