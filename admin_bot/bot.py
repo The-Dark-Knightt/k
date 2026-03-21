@@ -6,7 +6,6 @@ Stores delivered reports in webapp_api so users can download from the app.
 import logging
 import os
 import sys
-import threading
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -27,10 +26,7 @@ user_bot = telebot.TeleBot(USER_BOT_TOKEN)
 
 pending_reports  = {}
 pending_files    = {}
-pending_timers   = {}
 pending_approval = {}
-
-COLLECT_SECONDS = 30
 
 STATUS_EMOJI = {
     "pending_payment":  "💳",
@@ -331,8 +327,8 @@ def cb_sendreport(call):
     pending_reports[call.message.chat.id] = user_id
     bot.send_message(
         call.message.chat.id,
-        f"📎 Send the report file(s) for *{profile.get('full_name', 'Unknown')}* (`{user_id}`).\n"
-        f"Send all files then type /done or wait {COLLECT_SECONDS}s to deliver automatically.",
+        f"📎 Send report files for *{profile.get('full_name', 'Unknown')}* (`{user_id}`).\n"
+        f"Type /done when finished to deliver.",
         parse_mode="Markdown",
     )
 
@@ -356,25 +352,16 @@ def handle_admin_document(message):
     downloaded = bot.download_file(file_info.file_path)
     pending_files[admin_chat_id].append((downloaded, message.document.file_name or "report"))
 
-    if admin_chat_id in pending_timers:
-        pending_timers[admin_chat_id].cancel()
-
     count = len(pending_files[admin_chat_id])
     bot.send_message(
         admin_chat_id,
-        f"📎 File {count} received. Send more or wait {COLLECT_SECONDS}s. Type /done to deliver now.",
+        f"📎 {count} file(s) queued. Type /done to deliver.",
     )
-
-    timer = threading.Timer(COLLECT_SECONDS, _finalize_report, args=[admin_chat_id])
-    timer.daemon = True
-    timer.start()
-    pending_timers[admin_chat_id] = timer
 
 
 def _finalize_report(admin_chat_id):
     user_id = pending_reports.pop(admin_chat_id, None)
     files   = pending_files.pop(admin_chat_id, [])
-    pending_timers.pop(admin_chat_id, None)
 
     if not user_id or not files:
         return
@@ -382,32 +369,36 @@ def _finalize_report(admin_chat_id):
     profile = get_user(user_id)
     total   = len(files)
 
-    # Deliver via Telegram chat
+    # Deliver ALL files via Telegram — no caption clutter
     for i, (file_bytes, filename) in enumerate(files):
-        caption = (
-            "📋 *Your AI & Plagiarism Check Report is ready!*\n\n"
-            "📱 You can also download it directly from the app. ✅"
-            if i == 0 else f"📎 File {i+1} of {total}"
-        )
+        caption = f"📄 Report {i+1} of {total}" if total > 1 else "📄 Your report"
         user_bot.send_document(
             user_id,
             file_bytes,
             visible_file_name=filename,
             caption=caption,
-            parse_mode="Markdown",
         )
 
-    # Store in webapp_api so user can also download from the app
+    # Store ALL files in webapp_api for in-app download
     _store_report_in_api(user_id, files)
 
     subs = max(0, profile.get("submissions", 1) - 1)
     set_user(user_id, {"status": "report_sent", "submissions": subs})
+
+    # Follow-up message
+    if subs > 0:
+        user_bot.send_message(
+            user_id,
+            f"📄 *{subs} submission(s) remaining.*\nOpen the app to upload!",
+            parse_mode="Markdown",
+            reply_markup=_open_app_markup(),
+        )
+
     _notify_user_report_sent(user_id)
 
     bot.send_message(
         admin_chat_id,
-        f"✅ {total} file(s) delivered to *{profile.get('full_name', '')}* (`{user_id}`).\n"
-        f"Submissions remaining: {subs}",
+        f"✅ {total} file(s) → *{profile.get('full_name', '')}* (`{user_id}`). {subs} sub(s) left.",
         parse_mode="Markdown",
         reply_markup=main_menu_markup(),
     )
@@ -419,8 +410,6 @@ def cmd_done(message):
     if message.chat.id not in pending_reports:
         bot.send_message(message.chat.id, "ℹ️ No active report session.", reply_markup=main_menu_markup())
         return
-    if message.chat.id in pending_timers:
-        pending_timers[message.chat.id].cancel()
     _finalize_report(message.chat.id)
 
 
@@ -491,7 +480,7 @@ def cmd_help(message):
     bot.send_message(
         message.chat.id,
         "*Admin Commands*\n\n"
-        "/menu — open the main menu\n."
+        "/menu — open the main menu\n"
         "/sendreport `<id>` — start a report session\n"
         "/done — deliver files immediately\n",
         parse_mode="Markdown",
