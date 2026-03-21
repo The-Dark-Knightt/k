@@ -393,6 +393,12 @@ def _finalize_report(admin_chat_id):
             parse_mode="Markdown",
             reply_markup=_open_app_markup(),
         )
+    else:
+        user_bot.send_message(
+            user_id,
+            "✅ All submissions used.\nOpen the app to purchase more checks.",
+            reply_markup=_open_app_markup(),
+        )
 
     _notify_user_report_sent(user_id)
 
