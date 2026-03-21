@@ -54,23 +54,6 @@ def cmd_start(message):
     existing_subs   = existing.get("submissions", 0)
     existing_status = existing.get("status", "pending_payment")
 
-    if existing_subs > 0 and existing_status in ("approved", "report_sent"):
-        set_user(user.id, {
-            "username":  user.username or "",
-            "full_name": full_name,
-            "status":    "approved",
-        })
-    bot.send_message(
-        message.chat.id,
-        f"👋 Welcome back, *{user.first_name}!*\n\n"
-        f"📂 You still have *{existing_subs} submission(s)* remaining.\n"
-        f"Tap below to open the app and upload your document!",
-        parse_mode="Markdown",
-        reply_markup=telebot.types.ReplyKeyboardRemove(),
-    )
-    bot.send_message(message.chat.id, "Open the app below:", reply_markup=open_app_markup())
-    return
-
     set_user(user.id, {
         "username":    user.username or "",
         "full_name":   full_name,
@@ -78,13 +61,12 @@ def cmd_start(message):
         "submissions": existing_subs,
     })
 
+    status = get_admin_status()
+    online = "🟢 Online" if status == "online" else "🔴 Offline"
+
     bot.send_message(
         message.chat.id,
-        f"👋 Welcome, *{user.first_name}!*\n\n"
-        "I generate *AI & Plagiarism Reports* for your documents.\n\n"
-        "📱 Open the app below — pay, submit proof, and upload your document all in one place."
-        + get_status_line(),
-        parse_mode="Markdown",
+        f"👋 Hi {user.first_name}! Open the app below — $1 per check, results in 5–15 min. {online}",
         reply_markup=telebot.types.ReplyKeyboardRemove(),
     )
     bot.send_message(message.chat.id, "Open the app below:", reply_markup=open_app_markup())
