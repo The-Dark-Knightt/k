@@ -265,9 +265,8 @@ def cb_set_submissions(call):
     set_user(user_id, {"status": "approved", "submissions": submissions})
     user_bot.send_message(
         user_id,
-        f"✅ *Payment verified!*\n"
-        f"You've been allocated *{submissions} submission(s).*\n\n"
-        f"📱 Open the app to upload your document!",
+        f"✅ *Payment verified!* {submissions} submission(s) added.\n"
+        f"Open the app to upload your document!",
         parse_mode="Markdown",
         reply_markup=_open_app_markup(),
     )
@@ -462,9 +461,8 @@ def handle_text(message):
         set_user(user_id, {"status": "approved", "submissions": submissions})
         user_bot.send_message(
             user_id,
-            f"✅ *Payment verified!*\n"
-            f"You've been allocated *{submissions} submission(s).*\n\n"
-            f"📱 Open the app to upload your document!",
+            f"✅ *Payment verified!* {submissions} submission(s) added.\n"
+            f"Open the app to upload your document!",
             parse_mode="Markdown",
             reply_markup=_open_app_markup(),
         )
