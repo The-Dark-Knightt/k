@@ -6,8 +6,6 @@ Role: notifications only. All input goes through the Mini App.
 import logging
 import os
 import sys
-import threading
-import time
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -24,8 +22,7 @@ ADMIN_CHAT_ID   = int(os.environ["ADMIN_CHAT_ID"])
 bot       = telebot.TeleBot(USER_BOT_TOKEN)
 admin_bot = telebot.TeleBot(ADMIN_BOT_TOKEN)
 
-WEBAPP_URL     = os.environ.get("WEBAPP_URL", "https://the-dark-knightt.github.io/k/webapp/index.html")
-FOLLOWUP_DELAY = 3 * 60
+WEBAPP_URL = os.environ.get("WEBAPP_URL", "https://the-dark-knightt.github.io/k/webapp/index.html")
 
 
 def get_status_line():
@@ -43,32 +40,8 @@ def open_app_markup():
     return markup
 
 
-def send_followup(chat_id):
-    time.sleep(FOLLOWUP_DELAY)
-    profile     = get_user(chat_id)
-    submissions = profile.get("submissions", 0)
-    if submissions > 0:
-        bot.send_message(
-            chat_id,
-            f"📄 *Ready for your next document?*\n"
-            f"You have *{submissions} submission(s)* remaining.\n"
-            f"Tap below to open the app and upload!",
-            parse_mode="Markdown",
-            reply_markup=open_app_markup(),
-        )
-    else:
-        bot.send_message(
-            chat_id,
-            "✅ *All submissions used.*\n"
-            "Open the app to get more checks.",
-            parse_mode="Markdown",
-            reply_markup=open_app_markup(),
-        )
-
-
 def notify_report_sent(chat_id):
-    t = threading.Thread(target=send_followup, args=(chat_id,), daemon=True)
-    t.start()
+    pass  # follow-up removed — admin_bot handles post-delivery message
 
 
 # ── /start ────────────────────────────────────────────────────────────────────
@@ -129,6 +102,11 @@ def handle_any(message):
         "doc_received":     "⏳ Document under review — report ready in 5–15 min.",
         "report_sent":      "✅ Report sent. Open the app for a new check.",
     }
+    # Delete the user's message to keep the chat clean
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass
     msg = nudge_map.get(status, "Please use the app below to continue.")
     bot.send_message(message.chat.id, msg, reply_markup=open_app_markup())
 
