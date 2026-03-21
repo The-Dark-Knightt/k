@@ -67,32 +67,16 @@ def cmd_start(message):
     bot.send_message(
         message.chat.id,
         f"👋 Hi {user.first_name}! Open the app below — $1 per check, results in 5–15 min. {online}",
-        reply_markup=telebot.types.ReplyKeyboardRemove(),
+        reply_markup=open_app_markup(),
     )
-    bot.send_message(message.chat.id, "Open the app below:", reply_markup=open_app_markup())
 
 
 # ── All text / file messages → redirect to app ────────────────────────────────
 
 @bot.message_handler(func=lambda m: True, content_types=["text", "photo", "document"])
 def handle_any(message):
-    profile = get_user(message.from_user.id)
-    status  = profile.get("status", "pending_payment")
-
-    nudge_map = {
-        "pending_payment":  "👆 Open the app to pay and submit your reference code.",
-        "pending_approval": "⏳ Payment being verified — we'll notify you shortly.",
-        "approved":         "📎 Open the app to upload your document.",
-        "doc_received":     "⏳ Document under review — report ready in 5–15 min.",
-        "report_sent":      "✅ Report sent. Open the app for a new check.",
-    }
-    msg = nudge_map.get(status, "Please use the app below to continue.")
-    # Remove keyboard so user's only obvious action is the Open App button
-    bot.send_message(
-        message.chat.id, msg,
-        reply_markup=telebot.types.ReplyKeyboardRemove()
-    )
-    bot.send_message(message.chat.id, "Open the app below:", reply_markup=open_app_markup())
+    msg = "Use the app to upload or reach support: @daemonizerr"
+    bot.send_message(message.chat.id, msg, reply_markup=open_app_markup())
 
 
 def main():
